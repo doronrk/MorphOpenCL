@@ -43,7 +43,7 @@ void ofApp::setup(){
     sampleRate = 44100;
     bufferSize = 1024;
     nBuffers = 4;
-    magnitudeScale = -200.0;
+    magnitudeScale = 200.0;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
     drawBins.resize(fft->getBinSize());
     middleBins.resize(fft->getBinSize());
@@ -52,8 +52,8 @@ void ofApp::setup(){
     
     //Camera
 	cam.setDistance(600);
-    cam.disableMouseInput();    //disable mouse control - we will rotate camera by ourselves
-//    cam.enableMouseInput();
+//    cam.disableMouseInput();    //disable mouse control - we will rotate camera by ourselves
+    cam.enableMouseInput();
     
     //OpenCL
 	opencl.setupFromOpenGL();
@@ -91,14 +91,10 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofBackground(0, 0, 0);
-    soundMutex.lock();
-    drawBins = middleBins;
-    soundMutex.unlock();
 
-    
     //camera rotate
-    float time = ofGetElapsedTimef();
-    cam.orbit( sin(time*0.5) * 12, 0, 600, ofPoint( 0, 0, 0 ) );
+//    float time = ofGetElapsedTimef();
+//    cam.orbit( sin(time*0.5) * 12, 0, 600, ofPoint( 0, 0, 0 ) );
     cam.begin();
     
     //Enabling "addition" blending mode to sum up particles brightnesses
@@ -116,7 +112,23 @@ void ofApp::draw(){
     
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
+    soundMutex.lock();
+    drawBins = middleBins;
+    soundMutex.unlock();
     morphToSpectrum(drawBins);
+    
+    ofPushStyle();
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(2.0);
+    
+        ofSpherePrimitive sphere;
+        sphere.setRadius(90);
+        sphere.setResolution(10);
+        sphere.setMode(OF_PRIMITIVE_LINES);
+        sphere.setPosition(0, 0, 0);
+        sphere.drawWireframe();
+    
+    ofPopStyle();
     
     cam.end();
     
@@ -141,7 +153,7 @@ void ofApp::morphToSpectrum(vector<float> bins)
         
         ofPushMatrix();
         
-            ofTranslate((windowWidth - spectrumWidth)/2.0, windowHeight/2.0, 0);
+            ofTranslate(-(spectrumWidth/2.0), 0, 0);
             
             // draw Spectrum
             ofBeginShape();
@@ -187,12 +199,12 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
         if ( axe == 2 ) { pnt.z = ( pnt.z >= 0 ) ? rad : (-rad ); }
         
         //add noise
-        //float noise = 10;
-        //pnt.x += ofRandom( -noise, noise );
-        //pnt.y += ofRandom( -noise, noise );
-        //pnt.z += ofRandom( -noise, noise );
-        
-        pnt.y -= 150;   //shift down
+//        float noise = 10;
+//        pnt.x += ofRandom( -noise, noise );
+//        pnt.y += ofRandom( -noise, noise );
+//        pnt.z += ofRandom( -noise, noise );
+//        
+//        pnt.y -= 150;   //shift down
 
         //Setting to particle
 		Particle &p = particles[i];
@@ -280,6 +292,8 @@ void ofApp::morphToFace() {      //Morphing to face
         //set to particle
         p.target.set( pnt.x, pnt.y, pnt.z, 0 );
         p.speed = 0.06;
+//        p.speed = 1.0;
+
         
     }
     
@@ -338,7 +352,6 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
             maxValue = abs(audioBins[i]);
         }
     }
-    cerr << "maxValue " << maxValue << endl;
     for (int i = 0; i < fft->getBinSize(); i++)
     {
         audioBins[i] = audioBins[i] / maxValue;
@@ -347,7 +360,6 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     soundMutex.lock();
     middleBins = audioBins;
     soundMutex.unlock();
-
 }
 
 
