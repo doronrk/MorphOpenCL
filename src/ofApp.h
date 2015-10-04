@@ -32,7 +32,10 @@ public:
     
     void morphToCube( bool setPos );            //Morphing to cube
     void morphToFace();                         //Morphing to face
-    void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
+    void morphToSpectrum(vector<float> bins, bool immediate);   //Morphing to frequency spectrum
+    
+    void drawSpectrum(vector<float> bins);      // draw the frequency spectrum as of shape
+
     
     ofEasyCam cam; // add mouse controls for camera movement
 
@@ -62,5 +65,9 @@ private:
     
     float magnitudeScale;
     
+    bool drawingSpectrum;
+    bool spectrumInstant;
+    
     void drawSpectrum();
+    void drawReferenceSphere(float px, float py, float pz);
 };
