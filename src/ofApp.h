@@ -21,6 +21,7 @@
 
 
 #include "ofMain.h"
+#include "ofxFft.h"
 
 class ofApp : public ofBaseApp{
     
@@ -29,8 +30,9 @@ public:
     void update();
     void draw();
     
-    void morphToCube( bool setPos );       //Morphing to cube
-    void morphToFace();                    //Morphing to face
+    void morphToCube( bool setPos );            //Morphing to cube
+    void morphToFace();                         //Morphing to face
+    void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
     
     ofEasyCam cam; // add mouse controls for camera movement
 
@@ -44,5 +46,21 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
+    void audioReceived(float* input, int bufferSize, int nChannels);
+
+private:
+    ofxFft* fft;
+    ofMutex soundMutex;
+    vector<float> drawBins, middleBins, audioBins;
+    ofSoundStream soundStream;
     
+    int nOutputChannels;
+    int nInputChannels;
+    int sampleRate;
+    int bufferSize;
+    int nBuffers;
+    
+    float magnitudeScale;
+    
+    void drawSpectrum();
 };

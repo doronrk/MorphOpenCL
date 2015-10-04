@@ -35,9 +35,25 @@ void ofApp::setup(){
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
     
+    // Audio setup
+    soundStream.listDevices();
+    soundStream.setDeviceID(1);
+    nOutputChannels = 0;
+    nInputChannels = 2;
+    sampleRate = 44100;
+    bufferSize = 1024;
+    nBuffers = 4;
+    magnitudeScale = -200.0;
+    fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
+    drawBins.resize(fft->getBinSize());
+    middleBins.resize(fft->getBinSize());
+    audioBins.resize(fft->getBinSize());
+    soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
+    
     //Camera
 	cam.setDistance(600);
     cam.disableMouseInput();    //disable mouse control - we will rotate camera by ourselves
+//    cam.enableMouseInput();
     
     //OpenCL
 	opencl.setupFromOpenGL();
@@ -75,6 +91,10 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofBackground(0, 0, 0);
+    soundMutex.lock();
+    drawBins = middleBins;
+    soundMutex.unlock();
+
     
     //camera rotate
     float time = ofGetElapsedTimef();
@@ -96,11 +116,55 @@ void ofApp::draw(){
     
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
+    morphToSpectrum(drawBins);
+    
     cam.end();
     
     ofSetColor( ofColor::white );
     ofDrawBitmapString( "1 - morph to cube, 2 - morph to face", 20, 20 );
     
+}
+
+
+//--------------------------------------------------------------
+void ofApp::morphToSpectrum(vector<float> bins)
+{
+    int windowHeight = ofGetWindowHeight();
+    int windowWidth = ofGetWindowWidth();
+    float spectrumWidthRatio = 0.9;
+    float spectrumWidth = spectrumWidthRatio * windowWidth;
+    
+    ofPushStyle();
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(2.0);
+        ofNoFill();
+        
+        ofPushMatrix();
+        
+            ofTranslate((windowWidth - spectrumWidth)/2.0, windowHeight/2.0, 0);
+            
+            // draw Spectrum
+            ofBeginShape();
+            for (unsigned int i = 0; i < bins.size(); i++)
+            {
+                float binHeight = magnitudeScale * sqrt(bins[i]);
+                ofVertex(i*(spectrumWidth/bins.size()), binHeight, 0);
+            }
+            ofEndShape(false); // End line. Don't connect first and last points.
+            
+            ofTranslate(0, 0, -1000);
+            
+            // draw Spectrum
+            ofBeginShape();
+            for (unsigned int i = 0; i < bins.size(); i++)
+            {
+                float binHeight = magnitudeScale * sqrt(bins[i]);
+                ofVertex(i*(spectrumWidth/bins.size()), binHeight, 0);
+            }
+            ofEndShape(false); // End line. Don't connect first and last points.
+            
+        ofPopMatrix();
+    ofPopStyle();
 }
 
 
@@ -228,44 +292,101 @@ void ofApp::morphToFace() {      //Morphing to face
 void ofApp::keyPressed(int key){
     if ( key == '1' ) { morphToCube( false ); }
     if ( key == '2' ) { morphToFace(); }
+//    if ( key ==  '3' )
+//    {
+//        morphToSpectrum(drawBins);
+//    }
 }
 
 //--------------------------------------------------------------
-void ofApp::keyReleased(int key){
+void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
+{
+    // calculate the largest value in the buffer
+    float maxValue = 0.0;
+    for (int i = 0; i < bufferSize * nInputChannels; i++)
+    {
+        if (abs(input[i]) > maxValue)
+        {
+            maxValue = abs(input[i]);
+        }
+    }
+    float monoMix[bufferSize];
+    // scale buffer by maxValue
+    for (int frame = 0; frame < bufferSize; frame++)
+    {
+        float sum = 0.0;
+        for (int channel = 0; channel < nChannels; channel++)
+        {
+            int i = frame*nChannels + channel;
+            float normalizedAmp = input[i] / maxValue;
+            sum = sum + normalizedAmp;
+        }
+        sum = sum / nChannels;
+        monoMix[frame] = sum;
+    }
+    //calculate the fft
+    fft->setSignal(monoMix);
+    float* curFft = fft->getAmplitude();
+    memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
+    
+    //scale the bins
+    maxValue = 0;
+    for (int i = 0; i < fft->getBinSize(); i++)
+    {
+        if (abs(audioBins[i]) > maxValue)
+        {
+            maxValue = abs(audioBins[i]);
+        }
+    }
+    cerr << "maxValue " << maxValue << endl;
+    for (int i = 0; i < fft->getBinSize(); i++)
+    {
+        audioBins[i] = audioBins[i] / maxValue;
+    }
+    
+    soundMutex.lock();
+    middleBins = audioBins;
+    soundMutex.unlock();
 
+}
+
+
+//--------------------------------------------------------------
+void ofApp::keyReleased(int key){
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
-
+    
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-
+void ofApp::dragEvent(ofDragInfo dragInfo){
+    
 }

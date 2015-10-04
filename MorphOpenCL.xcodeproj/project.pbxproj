@@ -14,6 +14,14 @@
 		51A624541BC1BA0F008CB442 /* MSAOpenCLKernel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A6244A1BC1BA0F008CB442 /* MSAOpenCLKernel.cpp */; };
 		51A624551BC1BA0F008CB442 /* MSAOpenCLMemoryObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A6244C1BC1BA0F008CB442 /* MSAOpenCLMemoryObject.cpp */; };
 		51A624561BC1BA0F008CB442 /* MSAOpenCLProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A6244E1BC1BA0F008CB442 /* MSAOpenCLProgram.cpp */; };
+		51A624791BC1BB24008CB442 /* ofxEasyFft.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A6245D1BC1BB24008CB442 /* ofxEasyFft.cpp */; };
+		51A6247A1BC1BB24008CB442 /* ofxFft.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A6245F1BC1BB24008CB442 /* ofxFft.cpp */; };
+		51A6247B1BC1BB24008CB442 /* ofxFftBasic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A624611BC1BB24008CB442 /* ofxFftBasic.cpp */; };
+		51A6247C1BC1BB24008CB442 /* ofxFftw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A624631BC1BB24008CB442 /* ofxFftw.cpp */; };
+		51A6247D1BC1BB24008CB442 /* ofxProcessFFT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A624651BC1BB24008CB442 /* ofxProcessFFT.cpp */; };
+		51A6247E1BC1BB24008CB442 /* fftw3f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 51A6246F1BC1BB24008CB442 /* fftw3f.a */; };
+		51A6247F1BC1BB24008CB442 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 51A624751BC1BB24008CB442 /* kiss_fft.c */; };
+		51A624801BC1BB24008CB442 /* kiss_fftr.c in Sources */ = {isa = PBXBuildFile; fileRef = 51A624771BC1BB24008CB442 /* kiss_fftr.c */; };
 		BBAB23CB13894F3D00AA2426 /* GLUT.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBAB23BE13894E4700AA2426 /* GLUT.framework */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
 		E45BE97B0E8CC7DD009D7055 /* AGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E45BE9710E8CC7DD009D7055 /* AGL.framework */; };
@@ -83,6 +91,26 @@
 		51A6244F1BC1BA0F008CB442 /* MSAOpenCLProgram.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSAOpenCLProgram.h; sourceTree = "<group>"; };
 		51A624501BC1BA0F008CB442 /* MSAOpenCLTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSAOpenCLTypes.h; sourceTree = "<group>"; };
 		51A624591BC1BA14008CB442 /* MSAPingPong.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSAPingPong.h; sourceTree = "<group>"; };
+		51A6245D1BC1BB24008CB442 /* ofxEasyFft.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxEasyFft.cpp; sourceTree = "<group>"; };
+		51A6245E1BC1BB24008CB442 /* ofxEasyFft.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxEasyFft.h; sourceTree = "<group>"; };
+		51A6245F1BC1BB24008CB442 /* ofxFft.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxFft.cpp; sourceTree = "<group>"; };
+		51A624601BC1BB24008CB442 /* ofxFft.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxFft.h; sourceTree = "<group>"; };
+		51A624611BC1BB24008CB442 /* ofxFftBasic.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxFftBasic.cpp; sourceTree = "<group>"; };
+		51A624621BC1BB24008CB442 /* ofxFftBasic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxFftBasic.h; sourceTree = "<group>"; };
+		51A624631BC1BB24008CB442 /* ofxFftw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxFftw.cpp; sourceTree = "<group>"; };
+		51A624641BC1BB24008CB442 /* ofxFftw.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxFftw.h; sourceTree = "<group>"; };
+		51A624651BC1BB24008CB442 /* ofxProcessFFT.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxProcessFFT.cpp; sourceTree = "<group>"; };
+		51A624661BC1BB24008CB442 /* ofxProcessFFT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxProcessFFT.h; sourceTree = "<group>"; };
+		51A624691BC1BB24008CB442 /* .keep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
+		51A6246B1BC1BB24008CB442 /* fftw3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fftw3.h; sourceTree = "<group>"; };
+		51A6246D1BC1BB24008CB442 /* .keep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
+		51A6246F1BC1BB24008CB442 /* fftw3f.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = fftw3f.a; sourceTree = "<group>"; };
+		51A624731BC1BB24008CB442 /* .keep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
+		51A624741BC1BB24008CB442 /* _kiss_fft_guts.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _kiss_fft_guts.h; sourceTree = "<group>"; };
+		51A624751BC1BB24008CB442 /* kiss_fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = kiss_fft.c; sourceTree = "<group>"; };
+		51A624761BC1BB24008CB442 /* kiss_fft.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = kiss_fft.h; sourceTree = "<group>"; };
+		51A624771BC1BB24008CB442 /* kiss_fftr.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = kiss_fftr.c; sourceTree = "<group>"; };
+		51A624781BC1BB24008CB442 /* kiss_fftr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = kiss_fftr.h; sourceTree = "<group>"; };
 		BBAB23BE13894E4700AA2426 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = ../../../libs/glut/lib/osx/GLUT.framework; sourceTree = "<group>"; };
 		E4328143138ABC890047C5CB /* openFrameworksLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openFrameworksLib.xcodeproj; path = ../../../libs/openFrameworksCompiled/project/osx/openFrameworksLib.xcodeproj; sourceTree = SOURCE_ROOT; };
 		E45BE9710E8CC7DD009D7055 /* AGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGL.framework; path = /System/Library/Frameworks/AGL.framework; sourceTree = "<absolute>"; };
@@ -126,6 +154,7 @@
 				E45BE9810E8CC7DD009D7055 /* CoreServices.framework in Frameworks */,
 				E45BE9830E8CC7DD009D7055 /* OpenGL.framework in Frameworks */,
 				E45BE9840E8CC7DD009D7055 /* QuickTime.framework in Frameworks */,
+				51A6247E1BC1BB24008CB442 /* fftw3f.a in Frameworks */,
 				E4C2424710CC5A17004149E2 /* AppKit.framework in Frameworks */,
 				E4C2424810CC5A17004149E2 /* Cocoa.framework in Frameworks */,
 				E4C2424910CC5A17004149E2 /* IOKit.framework in Frameworks */,
@@ -141,6 +170,7 @@
 			children = (
 				51A624401BC1BA0F008CB442 /* ofxMSAOpenCL */,
 				51A624571BC1BA14008CB442 /* ofxMSAPingPong */,
+				51A6245B1BC1BB24008CB442 /* ofxFft */,
 			);
 			name = addons;
 			sourceTree = "<group>";
@@ -191,6 +221,91 @@
 			);
 			name = src;
 			path = ../../../addons/ofxMSAPingPong/src;
+			sourceTree = "<group>";
+		};
+		51A6245B1BC1BB24008CB442 /* ofxFft */ = {
+			isa = PBXGroup;
+			children = (
+				51A6245C1BC1BB24008CB442 /* src */,
+				51A624671BC1BB24008CB442 /* libs */,
+			);
+			name = ofxFft;
+			sourceTree = "<group>";
+		};
+		51A6245C1BC1BB24008CB442 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				51A6245D1BC1BB24008CB442 /* ofxEasyFft.cpp */,
+				51A6245E1BC1BB24008CB442 /* ofxEasyFft.h */,
+				51A6245F1BC1BB24008CB442 /* ofxFft.cpp */,
+				51A624601BC1BB24008CB442 /* ofxFft.h */,
+				51A624611BC1BB24008CB442 /* ofxFftBasic.cpp */,
+				51A624621BC1BB24008CB442 /* ofxFftBasic.h */,
+				51A624631BC1BB24008CB442 /* ofxFftw.cpp */,
+				51A624641BC1BB24008CB442 /* ofxFftw.h */,
+				51A624651BC1BB24008CB442 /* ofxProcessFFT.cpp */,
+				51A624661BC1BB24008CB442 /* ofxProcessFFT.h */,
+			);
+			name = src;
+			path = ../../../addons/ofxFft/src;
+			sourceTree = "<group>";
+		};
+		51A624671BC1BB24008CB442 /* libs */ = {
+			isa = PBXGroup;
+			children = (
+				51A624681BC1BB24008CB442 /* fftw */,
+				51A624721BC1BB24008CB442 /* kiss */,
+			);
+			name = libs;
+			path = ../../../addons/ofxFft/libs;
+			sourceTree = "<group>";
+		};
+		51A624681BC1BB24008CB442 /* fftw */ = {
+			isa = PBXGroup;
+			children = (
+				51A624691BC1BB24008CB442 /* .keep */,
+				51A6246A1BC1BB24008CB442 /* include */,
+				51A6246C1BC1BB24008CB442 /* lib */,
+			);
+			path = fftw;
+			sourceTree = "<group>";
+		};
+		51A6246A1BC1BB24008CB442 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				51A6246B1BC1BB24008CB442 /* fftw3.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		51A6246C1BC1BB24008CB442 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				51A6246D1BC1BB24008CB442 /* .keep */,
+				51A6246E1BC1BB24008CB442 /* osx */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
+		51A6246E1BC1BB24008CB442 /* osx */ = {
+			isa = PBXGroup;
+			children = (
+				51A6246F1BC1BB24008CB442 /* fftw3f.a */,
+			);
+			path = osx;
+			sourceTree = "<group>";
+		};
+		51A624721BC1BB24008CB442 /* kiss */ = {
+			isa = PBXGroup;
+			children = (
+				51A624731BC1BB24008CB442 /* .keep */,
+				51A624741BC1BB24008CB442 /* _kiss_fft_guts.h */,
+				51A624751BC1BB24008CB442 /* kiss_fft.c */,
+				51A624761BC1BB24008CB442 /* kiss_fft.h */,
+				51A624771BC1BB24008CB442 /* kiss_fftr.c */,
+				51A624781BC1BB24008CB442 /* kiss_fftr.h */,
+			);
+			path = kiss;
 			sourceTree = "<group>";
 		};
 		BBAB23C913894ECA00AA2426 /* system frameworks */ = {
@@ -363,9 +478,16 @@
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
 				51A624551BC1BA0F008CB442 /* MSAOpenCLMemoryObject.cpp in Sources */,
 				51A624531BC1BA0F008CB442 /* MSAOpenCLImage.cpp in Sources */,
+				51A6247C1BC1BB24008CB442 /* ofxFftw.cpp in Sources */,
 				51A624541BC1BA0F008CB442 /* MSAOpenCLKernel.cpp in Sources */,
+				51A6247D1BC1BB24008CB442 /* ofxProcessFFT.cpp in Sources */,
 				51A624511BC1BA0F008CB442 /* MSAOpenCL.cpp in Sources */,
+				51A6247F1BC1BB24008CB442 /* kiss_fft.c in Sources */,
 				E4B69E210A3A1BDC003C02F2 /* ofApp.cpp in Sources */,
+				51A624791BC1BB24008CB442 /* ofxEasyFft.cpp in Sources */,
+				51A624801BC1BB24008CB442 /* kiss_fftr.c in Sources */,
+				51A6247B1BC1BB24008CB442 /* ofxFftBasic.cpp in Sources */,
+				51A6247A1BC1BB24008CB442 /* ofxFft.cpp in Sources */,
 				51A624561BC1BA0F008CB442 /* MSAOpenCLProgram.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -522,9 +644,10 @@
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_50)",
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_51)",
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_52)",
+					/Users/Doron/Documents/Developer/of_v0.8.4_osx_release/addons/ofxFft/libs/fftw/lib/osx,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)Debug";
-				USER_HEADER_SEARCH_PATHS = "";
+				USER_HEADER_SEARCH_PATHS = ../../../addons/ofxFft/libs/fftw/include/;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -608,9 +731,10 @@
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_49)",
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_50)",
 					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_51)",
+					/Users/Doron/Documents/Developer/of_v0.8.4_osx_release/addons/ofxFft/libs/fftw/lib/osx,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "";
+				USER_HEADER_SEARCH_PATHS = ../../../addons/ofxFft/libs/fftw/include/;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
