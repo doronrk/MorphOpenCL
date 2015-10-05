@@ -1,21 +1,12 @@
-MorphOpenCL
-===========
-Morphing particles from cube to face made with openFrameworks and OpenCL.
-Demo video - http://www.youtube.com/watch?v=iafEr-T2p5g
+final direction:
+    - perterb the face based on the spectrum
 
-This is example of using OpenCL for creating particle system,
-which morphs between two 3D shapes - cube and face image
+ideas for improvements:
+    - normalize height of the spectrum according to most recent volume
+    - currently using a buffer size of 2048
+        - would rather use a smaller buffer size so that its more responsive, but in its current state, that causes the spectrogram to look really sparse
+        - but before I can do this I need to write code to send some fraction of the particles to interpolated heights between bin
+        - it's drawing 1 million points right now, so a ton of them are redundant in the spectrum view
 
-Control keys: 1 - morph to cube, 2 - morph to face.
-
-All drawn particles have equal brightness, so to achieve face-like
-particles configuration by placing different number of particles
-at each pixel and draw them in "addition blending" mode.
-
-Project is developed for openFrameworks 8.4_osx and is based
-on example-Particles example of ofxMSAOpenCL adoon.
-It uses addons ofxMSAOpenCL and ofxMSAPingPong.
-For simplicity this addons are placed right in the project's folder.
-
-The code and "ksenia.jpg" photo made by http://kuflex.com, 2014:
-Denis Perevalov, Igor Sodazot and Ksenia Lyashenko.
+demo:
+    - well calibrated for When I'm Small

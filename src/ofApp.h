@@ -65,8 +65,13 @@ private:
     
     float portionOfSpecToDraw;
     float freqScalingExponent;
-    float magnitudeScale;
-    float particleSpeed;
+    float amplitudeScalingExponent;
+    float amplitudeScale;
+    
+    float spectrumParticleSpeed;
+    float faceParticleSpeed;
+    float cubeParticleSpeed;
+
     
     bool drawingSpectrum;
     bool suspended;
