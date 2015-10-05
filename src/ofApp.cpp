@@ -345,6 +345,7 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
 //    soundMutex.unlock();
 }
 
+//--------------------------------------------------------------
 void ofApp::normalize(vector<float>& data) {
     float maxValue = 0;
     for(int i = 0; i < data.size(); i++) {
@@ -352,8 +353,11 @@ void ofApp::normalize(vector<float>& data) {
             maxValue = abs(data[i]);
         }
     }
-    for(int i = 0; i < data.size(); i++) {
-        data[i] /= maxValue;
+    if (maxValue > 0)
+    {
+        for(int i = 0; i < data.size(); i++) {
+            data[i] /= maxValue;
+        }
     }
 }
 
