@@ -69,4 +69,6 @@ private:
     bool drawingSpectrum;
     
     void drawReferenceSphere(float px, float py, float pz);
+    void normalize(vector<float>& data);
+
 };

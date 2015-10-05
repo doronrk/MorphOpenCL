@@ -38,11 +38,11 @@ void ofApp::setup(){
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(3);
+    soundStream.setDeviceID(4);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-    bufferSize = 4096;
+    bufferSize = 1024;
     nBuffers = 4;
     magnitudeScale = 200.0;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
@@ -319,16 +319,8 @@ void ofApp::keyPressed(int key){
 //--------------------------------------------------------------
 void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
 {
-    // calculate the largest value in the buffer
-    float maxValue = 0.0;
-    for (int i = 0; i < bufferSize * nInputChannels; i++)
-    {
-        if (abs(input[i]) > maxValue)
-        {
-            maxValue = abs(input[i]);
-        }
-    }
-    float monoMix[bufferSize];
+    vector<float> monoMix;
+    monoMix.resize(bufferSize);
     // scale buffer by maxValue
     for (int frame = 0; frame < bufferSize; frame++)
     {
@@ -336,41 +328,33 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
         for (int channel = 0; channel < nChannels; channel++)
         {
             int i = frame*nChannels + channel;
-            float normalizedAmp = input[i];
-            if (maxValue > 0.0)
-            {
-                normalizedAmp = normalizedAmp / maxValue;
-            }
-            sum = sum + normalizedAmp;
+            sum = sum + input[i];
         }
         sum = sum / nChannels;
         monoMix[frame] = sum;
     }
+    normalize(monoMix);
     //calculate the fft
     fft->setSignal(monoMix);
     float* curFft = fft->getAmplitude();
     memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
-    
-    //scale the bins
-    maxValue = 0;
-    for (int i = 0; i < fft->getBinSize(); i++)
-    {
-        if (abs(audioBins[i]) > maxValue)
-        {
-            maxValue = abs(audioBins[i]);
-        }
-    }
-    for (int i = 0; i < fft->getBinSize(); i++)
-    {
-        if (maxValue > 0.0)
-        {
-            audioBins[i] = audioBins[i] / maxValue;
-        }
-    }
+    normalize(audioBins);
     
 //    soundMutex.lock();
     middleBins = audioBins;
 //    soundMutex.unlock();
+}
+
+void ofApp::normalize(vector<float>& data) {
+    float maxValue = 0;
+    for(int i = 0; i < data.size(); i++) {
+        if(abs(data[i]) > maxValue) {
+            maxValue = abs(data[i]);
+        }
+    }
+    for(int i = 0; i < data.size(); i++) {
+        data[i] /= maxValue;
+    }
 }
 
 
