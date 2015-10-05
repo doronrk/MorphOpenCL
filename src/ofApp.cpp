@@ -34,12 +34,11 @@ void ofApp::setup(){
     ofSetWindowTitle("Morph OpenCL example");
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
-    drawingSpectrum = true;
-    spectrumInstant = true;
+    particleSpeed = 0.05;
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(1);
+    soundStream.setDeviceID(3);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
@@ -54,8 +53,8 @@ void ofApp::setup(){
     
     //Camera
 	cam.setDistance(600);
-//    cam.disableMouseInput();    //disable mouse control - we will rotate camera by ourselves
-    cam.enableMouseInput();
+    cam.setFov(60.0);
+//    cam.disableMouseInput();
     
     //OpenCL
 	opencl.setupFromOpenGL();
@@ -72,9 +71,8 @@ void ofApp::setup(){
     particles.initBuffer( N );
     particlePos.initFromGLObject( vbo, N );
     
-    //Start with cube
-    morphToCube( true );
-	
+//    drawingSpectrum = true;
+    morphToFace();
 }
 
 //--------------------------------------------------------------
@@ -90,9 +88,9 @@ void ofApp::update(){
 	opencl.finish();
     
     // update bin sizes
-    soundMutex.lock();
+//    soundMutex.lock();
     drawBins = middleBins;
-    soundMutex.unlock();
+//    soundMutex.unlock();
 }
 
 //--------------------------------------------------------------
@@ -119,7 +117,7 @@ void ofApp::draw(){
     
     if (drawingSpectrum)
     {
-        morphToSpectrum(drawBins, spectrumInstant);
+        morphToSpectrum(drawBins);
     }
     
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
@@ -133,7 +131,6 @@ void ofApp::draw(){
 
 void ofApp::drawReferenceSphere(float px, float py, float pz)
 {
-    
     ofPushStyle();
     ofSetColor(245, 58, 135);
     ofSetLineWidth(2.0);
@@ -151,101 +148,30 @@ void ofApp::drawReferenceSphere(float px, float py, float pz)
 
 
 //--------------------------------------------------------------
-void ofApp::drawSpectrum(vector<float> bins)
+void ofApp::morphToSpectrum(vector<float> bins)
 {
-    int windowHeight = ofGetWindowHeight();
-    int windowWidth = ofGetWindowWidth();
-    float spectrumWidthRatio = 0.9;
-    float spectrumWidth = spectrumWidthRatio * windowWidth;
-    
-    ofPushStyle();
-        ofSetColor(245, 58, 135);
-        ofSetLineWidth(2.0);
-        ofNoFill();
-        
-        ofPushMatrix();
-    
-            float leftXOfSpectrum = -(spectrumWidth/2.0);
-            cerr << "leftXOfSpectrum: " << leftXOfSpectrum << endl;
-            ofTranslate(leftXOfSpectrum, 0, 0);
-    
-            // draw Spectrum
-            ofBeginShape();
-            for (unsigned int i = 0; i < bins.size(); i++)
-            {
-                float binHeight = magnitudeScale * sqrt(bins[i]);
-                ofVertex(i*(spectrumWidth/bins.size()), binHeight, 0);
-            }
-            ofEndShape(false); // End line. Don't connect first and last points.
-            
-            ofTranslate(0, 0, -1000);
-            
-            // draw Spectrum
-            ofBeginShape();
-            for (unsigned int i = 0; i < bins.size(); i++)
-            {
-                float binHeight = magnitudeScale * sqrt(bins[i]);
-                ofVertex(i*(spectrumWidth/bins.size()), binHeight, 0);
-            }
-            ofEndShape(false); // End line. Don't connect first and last points.
-            
-        ofPopMatrix();
-    ofPopStyle();
-}
+    float spectrumWidth = 600;
+    int nBins = bins.size();
+    float binWidth = spectrumWidth / nBins;
 
-//--------------------------------------------------------------
-void ofApp::morphToSpectrum(vector<float> bins, bool immediate)
-{
-    int windowHeight = ofGetWindowHeight();
-    int windowWidth = ofGetWindowWidth();
-    float spectrumWidthRatio = 0.9;
-    float spectrumWidth = spectrumWidthRatio * windowWidth;
-    
-    int partsPerBin = N/bins.size();
-    
-    ofPushMatrix();
-    
-    
-        float leftXOfSpectrum = -(spectrumWidth/2.0);
-        cerr << "leftXOfSpectrum: " << leftXOfSpectrum << endl;
-        ofTranslate(leftXOfSpectrum, 0, 0);
-    
-        // draw reference line
-        ofPushStyle();
-            ofSetColor(245, 58, 135);
-            ofSetLineWidth(2.0);
-            ofNoFill();
-    
-            ofBeginShape();
-            ofVertex(leftXOfSpectrum, 0, 0);
-            ofVertex(-leftXOfSpectrum, 0, 0);
-            ofEndShape(false);
-    
-        ofPopStyle();
-    
+    if (nBins > 0)
+    {
         for (int i = 0; i < N; i++)
         {
-            int binNumber = i % partsPerBin;
-            float px = binNumber * (spectrumWidth / bins.size());
+            int binNumber = i % nBins;
+            float px = ((binNumber * binWidth) * 2) - spectrumWidth;
             float py = magnitudeScale * sqrt(bins[binNumber]); // magnitude of the bin
             float pz = 0.0;
-
+            
             //Setting to particle
             Particle &p = particles[i];
             p.target.set(px, py, pz, 0);
-            p.speed = 0.05;
-            
-            if (immediate) {
-                particlePos[i].set(px, py, pz, 0);
-            }
+            p.speed = particleSpeed;
         }
+    }
     
-        //upload to GPU
-        particles.writeToDevice();
-        if (immediate) {
-            particlePos.writeToDevice();
-        }
-    ofPopMatrix();
+    //upload to GPU
+    particles.writeToDevice();
 }
 
 
@@ -279,7 +205,7 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
         //Setting to particle
 		Particle &p = particles[i];
         p.target.set( pnt.x, pnt.y, pnt.z, 0 );
-        p.speed = 0.05;
+        p.speed = particleSpeed;
         
         if ( setPos ) {
             particlePos[i].set( pnt.x, pnt.y, pnt.z, 0 );
@@ -374,15 +300,19 @@ void ofApp::morphToFace() {      //Morphing to face
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    if ( key == '1' ) { morphToCube( false ); }
-    if ( key == '2' ) { morphToFace(); }
+    if ( key == '1' )
+    {
+        morphToCube( false );
+        drawingSpectrum = false;
+    }
+    if ( key == '2' )
+    {
+        morphToFace();
+        drawingSpectrum = false;
+    }
     if ( key ==  '3' )
     {
         drawingSpectrum = ! drawingSpectrum;
-    }
-    if ( key ==  '4' )
-    {
-        spectrumInstant = ! spectrumInstant;
     }
 }
 
@@ -406,7 +336,11 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
         for (int channel = 0; channel < nChannels; channel++)
         {
             int i = frame*nChannels + channel;
-            float normalizedAmp = input[i] / maxValue;
+            float normalizedAmp = input[i];
+            if (maxValue > 0.0)
+            {
+                normalizedAmp = normalizedAmp / maxValue;
+            }
             sum = sum + normalizedAmp;
         }
         sum = sum / nChannels;
@@ -428,12 +362,15 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     }
     for (int i = 0; i < fft->getBinSize(); i++)
     {
-        audioBins[i] = audioBins[i] / maxValue;
+        if (maxValue > 0.0)
+        {
+            audioBins[i] = audioBins[i] / maxValue;
+        }
     }
     
-    soundMutex.lock();
+//    soundMutex.lock();
     middleBins = audioBins;
-    soundMutex.unlock();
+//    soundMutex.unlock();
 }
 
 
