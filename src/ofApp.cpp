@@ -35,6 +35,11 @@ void ofApp::setup(){
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
     particleSpeed = 0.05;
+    portionOfSpecToDraw = .5;
+    freqScalingExponent = 1.5;
+    if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
+        ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
+    }
     
     // Audio setup
     soundStream.listDevices();
@@ -42,11 +47,11 @@ void ofApp::setup(){
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-    bufferSize = 1024;
+    bufferSize = 2048;
     nBuffers = 4;
     magnitudeScale = 200.0;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
-    drawBins.resize(fft->getBinSize());
+    drawBins.resize(fft->getBinSize() * portionOfSpecToDraw);
     middleBins.resize(fft->getBinSize());
     audioBins.resize(fft->getBinSize());
     soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
@@ -71,7 +76,8 @@ void ofApp::setup(){
     particles.initBuffer( N );
     particlePos.initFromGLObject( vbo, N );
     
-//    drawingSpectrum = true;
+    drawingSpectrum = false;
+    suspended = false;
     morphToFace();
 }
 
@@ -89,7 +95,11 @@ void ofApp::update(){
     
     // update bin sizes
 //    soundMutex.lock();
-    drawBins = middleBins;
+    for (int i = 0; i < drawBins.size(); i++)
+    {
+        drawBins[i] = abs(middleBins[i] * (1 + pow(i, freqScalingExponent)/drawBins.size()));
+    }
+    normalize(drawBins);
 //    soundMutex.unlock();
 }
 
@@ -115,7 +125,7 @@ void ofApp::draw(){
 	glDrawArrays(GL_POINTS, 0, N );
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     
-    if (drawingSpectrum)
+    if (drawingSpectrum && !suspended)
     {
         morphToSpectrum(drawBins);
     }
@@ -322,16 +332,26 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     vector<float> monoMix;
     monoMix.resize(bufferSize);
     // scale buffer by maxValue
+    bool allZero = true;
     for (int frame = 0; frame < bufferSize; frame++)
     {
         float sum = 0.0;
         for (int channel = 0; channel < nChannels; channel++)
         {
             int i = frame*nChannels + channel;
+            if (input[i] != 0.0) {
+                allZero = false;
+            }
             sum = sum + input[i];
         }
         sum = sum / nChannels;
         monoMix[frame] = sum;
+    }
+    if (allZero) {
+        suspended = true;
+    } else if (suspended)
+    {
+        suspended = false;
     }
     normalize(monoMix);
     //calculate the fft
