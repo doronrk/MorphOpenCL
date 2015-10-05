@@ -140,7 +140,7 @@ void ofApp::draw(){
     cam.end();
     
     ofSetColor( ofColor::white );
-    ofDrawBitmapString( "1 - morph to cube, 2 - morph to face", 20, 20 );
+//    ofDrawBitmapString( "1 - morph to cube, 2 - morph to face", 20, 20 );
     
 }
 
