@@ -63,10 +63,18 @@ private:
     int bufferSize;
     int nBuffers;
     
-    float magnitudeScale;
-    float particleSpeed;
+    float portionOfSpecToDraw;
+    float freqScalingExponent;
+    float amplitudeScalingExponent;
+    float amplitudeScale;
+    
+    float spectrumParticleSpeed;
+    float faceParticleSpeed;
+    float cubeParticleSpeed;
+
     
     bool drawingSpectrum;
+    bool suspended;
     
     void drawReferenceSphere(float px, float py, float pz);
     void normalize(vector<float>& data);

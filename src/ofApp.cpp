@@ -34,7 +34,17 @@ void ofApp::setup(){
     ofSetWindowTitle("Morph OpenCL example");
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
-    particleSpeed = 0.05;
+    spectrumParticleSpeed = 0.10;
+    faceParticleSpeed = 0.04;
+    cubeParticleSpeed = 0.04;
+    
+    portionOfSpecToDraw = 1.0;
+    freqScalingExponent = 1.7;
+    amplitudeScalingExponent = 1.6;
+    amplitudeScale = 500.0;
+    if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
+        ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
+    }
     
     // Audio setup
     soundStream.listDevices();
@@ -42,19 +52,18 @@ void ofApp::setup(){
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-    bufferSize = 1024;
+    bufferSize = 2048;
     nBuffers = 4;
-    magnitudeScale = 200.0;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
-    drawBins.resize(fft->getBinSize());
+    drawBins.resize(fft->getBinSize() * portionOfSpecToDraw);
     middleBins.resize(fft->getBinSize());
     audioBins.resize(fft->getBinSize());
     soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
     
     //Camera
-	cam.setDistance(600);
+	cam.setDistance(800);
     cam.setFov(60.0);
-//    cam.disableMouseInput();
+    cam.disableMouseInput();
     
     //OpenCL
 	opencl.setupFromOpenGL();
@@ -71,7 +80,8 @@ void ofApp::setup(){
     particles.initBuffer( N );
     particlePos.initFromGLObject( vbo, N );
     
-//    drawingSpectrum = true;
+    drawingSpectrum = false;
+    suspended = false;
     morphToFace();
 }
 
@@ -88,9 +98,14 @@ void ofApp::update(){
 	opencl.finish();
     
     // update bin sizes
-//    soundMutex.lock();
-    drawBins = middleBins;
-//    soundMutex.unlock();
+    soundMutex.lock();
+    for (int i = 0; i < drawBins.size(); i++)
+    {
+        drawBins[i] = abs(middleBins[i] * (1 + pow(i, freqScalingExponent)/drawBins.size()));
+        drawBins[i] = pow(drawBins[i], amplitudeScalingExponent);
+    }
+    soundMutex.unlock();
+    normalize(drawBins);
 }
 
 //--------------------------------------------------------------
@@ -98,15 +113,15 @@ void ofApp::draw(){
     ofBackground(0, 0, 0);
 
     //camera rotate
-//    float time = ofGetElapsedTimef();
-//    cam.orbit( sin(time*0.5) * 12, 0, 600, ofPoint( 0, 0, 0 ) );
+    float time = ofGetElapsedTimef();
+    cam.orbit( sin(time*0.25) * 6, 0, 600, ofPoint( 0, 0, 0 ) );
     cam.begin();
     
     //Enabling "addition" blending mode to sum up particles brightnesses
     ofEnableBlendMode( OF_BLENDMODE_ADD );
     
     ofSetColor( 16, 16, 16 );
-    glPointSize( 1 );
+    glPointSize(1.0);
     
     //Drawing particles
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo);
@@ -115,7 +130,7 @@ void ofApp::draw(){
 	glDrawArrays(GL_POINTS, 0, N );
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     
-    if (drawingSpectrum)
+    if (drawingSpectrum && !suspended)
     {
         morphToSpectrum(drawBins);
     }
@@ -160,13 +175,13 @@ void ofApp::morphToSpectrum(vector<float> bins)
         {
             int binNumber = i % nBins;
             float px = ((binNumber * binWidth) * 2) - spectrumWidth;
-            float py = magnitudeScale * sqrt(bins[binNumber]); // magnitude of the bin
+            float py = bins[binNumber] * amplitudeScale; // magnitude of the bin
             float pz = 0.0;
             
             //Setting to particle
             Particle &p = particles[i];
-            p.target.set(px, py, pz, 0);
-            p.speed = particleSpeed;
+            p.target.set(px, py, pz, 0.0);
+            p.speed = spectrumParticleSpeed;
         }
     }
     
@@ -205,7 +220,7 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
         //Setting to particle
 		Particle &p = particles[i];
         p.target.set( pnt.x, pnt.y, pnt.z, 0 );
-        p.speed = particleSpeed;
+        p.speed = cubeParticleSpeed;
         
         if ( setPos ) {
             particlePos[i].set( pnt.x, pnt.y, pnt.z, 0 );
@@ -231,6 +246,7 @@ void ofApp::morphToFace() {      //Morphing to face
     //- so try to use diferent images for morph, selected randomly)
     ofPixels pix;
     ofLoadImage(pix, "ksenia.jpg");
+//    ofLoadImage(pix, "doron.jpeg");
     int w = pix.getWidth();
     int h = pix.getHeight();
 
@@ -287,10 +303,8 @@ void ofApp::morphToFace() {      //Morphing to face
         
         //set to particle
         p.target.set( pnt.x, pnt.y, pnt.z, 0 );
-        p.speed = 0.06;
-//        p.speed = 1.0;
+        p.speed = faceParticleSpeed;
 
-        
     }
     
     //upload to GPU
@@ -322,16 +336,26 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     vector<float> monoMix;
     monoMix.resize(bufferSize);
     // scale buffer by maxValue
+    bool allZero = true;
     for (int frame = 0; frame < bufferSize; frame++)
     {
         float sum = 0.0;
         for (int channel = 0; channel < nChannels; channel++)
         {
             int i = frame*nChannels + channel;
+            if (input[i] != 0.0) {
+                allZero = false;
+            }
             sum = sum + input[i];
         }
         sum = sum / nChannels;
         monoMix[frame] = sum;
+    }
+    if (allZero) {
+        suspended = true;
+    } else if (suspended)
+    {
+        suspended = false;
     }
     normalize(monoMix);
     //calculate the fft
@@ -340,9 +364,9 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
     normalize(audioBins);
     
-//    soundMutex.lock();
+    soundMutex.lock();
     middleBins = audioBins;
-//    soundMutex.unlock();
+    soundMutex.unlock();
 }
 
 //--------------------------------------------------------------
