@@ -7,18 +7,22 @@
 	<key>IDESourceControlProjectIdentifier</key>
 	<string>7079C262-499D-47FC-AAAD-6A7E452B8A1C</string>
 	<key>IDESourceControlProjectName</key>
-	<string>MorphOpenCL</string>
+	<string>project</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>79DB0A7ADC56BBCAA12C90FFE1322F828FF3E59F</key>
 		<string>https://github.com/doronrk/MorphOpenCL.git</string>
+		<key>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</key>
+		<string>https://github.com/kylemcdonald/ofxFft.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>MorphOpenCL.xcodeproj</string>
+	<string>MorphOpenCL.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>79DB0A7ADC56BBCAA12C90FFE1322F828FF3E59F</key>
 		<string>../..</string>
+		<key>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</key>
+		<string>../../../../../addons/ofxFft</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/doronrk/MorphOpenCL.git</string>
@@ -35,6 +39,14 @@
 			<string>79DB0A7ADC56BBCAA12C90FFE1322F828FF3E59F</string>
 			<key>IDESourceControlWCCName</key>
 			<string>MorphOpenCL</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxFft</string>
 		</dict>
 	</array>
 </dict>
