@@ -34,6 +34,7 @@ void ofApp::setup(){
     ofSetWindowTitle("Morph OpenCL example");
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
+    signalParticleSpeed = 0.10;
     spectrumParticleSpeed = 0.10;
     faceParticleSpeed = 0.04;
     cubeParticleSpeed = 0.04;
@@ -48,16 +49,20 @@ void ofApp::setup(){
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(4);
+    soundStream.setDeviceID(1);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
     bufferSize = 2048;
     nBuffers = 4;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
-    drawBins.resize(fft->getBinSize() * portionOfSpecToDraw);
-    middleBins.resize(fft->getBinSize());
-    audioBins.resize(fft->getBinSize());
+    drawFFTBins.resize(fft->getBinSize() * portionOfSpecToDraw);
+    middleFFTBins.resize(fft->getBinSize());
+    audioFFTBins.resize(fft->getBinSize());
+    drawSignal.resize(bufferSize);
+    middleSignal.resize(bufferSize);
+    audioSignal.resize(bufferSize);
+    
     soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
     
     //Camera
@@ -82,6 +87,7 @@ void ofApp::setup(){
     
     drawingSpectrum = false;
     suspended = false;
+    drawingSignal = false;
     morphToFace();
 }
 
@@ -99,13 +105,14 @@ void ofApp::update(){
     
     // update bin sizes
     soundMutex.lock();
-    for (int i = 0; i < drawBins.size(); i++)
+    for (int i = 0; i < drawFFTBins.size(); i++)
     {
-        drawBins[i] = abs(middleBins[i] * (1 + pow(i, freqScalingExponent)/drawBins.size()));
-        drawBins[i] = pow(drawBins[i], amplitudeScalingExponent);
+        drawFFTBins[i] = abs(middleFFTBins[i] * (1 + pow(i, freqScalingExponent)/drawFFTBins.size()));
+        drawFFTBins[i] = pow(drawFFTBins[i], amplitudeScalingExponent);
     }
+    drawSignal = middleSignal;
     soundMutex.unlock();
-    normalize(drawBins);
+    normalize(drawFFTBins);
 }
 
 //--------------------------------------------------------------
@@ -132,7 +139,10 @@ void ofApp::draw(){
     
     if (drawingSpectrum && !suspended)
     {
-        morphToSpectrum(drawBins);
+        morphToSpectrum(drawFFTBins);
+    } else if (drawingSignal)
+    {
+        morphToSignal(drawSignal);
     }
     
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
@@ -144,23 +154,31 @@ void ofApp::draw(){
     
 }
 
-void ofApp::drawReferenceSphere(float px, float py, float pz)
+
+//--------------------------------------------------------------
+void ofApp::morphToSignal(vector<float> signal)
 {
-    ofPushStyle();
-    ofSetColor(245, 58, 135);
-    ofSetLineWidth(2.0);
+    float signalWidth = 600;
+    int nSamples = signal.size();
+    float sampleWidth = signalWidth / nSamples;
     
-    ofSpherePrimitive sphere;
-    sphere.setRadius(90);
-    sphere.setResolution(10);
-    sphere.setMode(OF_PRIMITIVE_LINES);
-    sphere.setPosition(0, 0, 0);
-    sphere.drawWireframe();
+    if (nSamples > 0)
+    {
+        for (int i = 0; i < N; i++)
+        {
+            int sampleNumber = i % nSamples;
+            float px = ((sampleNumber * sampleWidth) * 2) - signalWidth;
+            float py = signal[sampleNumber] * amplitudeScale;
+            float pz = 0.0;
+            
+            Particle& p = particles[i];
+            p.target.set(px, py, pz, 0.0);
+            p.speed = signalParticleSpeed;
+        }
+    }
     
-    ofPopStyle();
+    particles.writeToDevice();
 }
-
-
 
 //--------------------------------------------------------------
 void ofApp::morphToSpectrum(vector<float> bins)
@@ -319,14 +337,20 @@ void ofApp::keyPressed(int key){
         morphToCube( false );
         drawingSpectrum = false;
     }
-    if ( key == '2' )
+    else if ( key == '2' )
     {
         morphToFace();
         drawingSpectrum = false;
     }
-    if ( key ==  '3' )
+    else if ( key ==  '3' )
     {
         drawingSpectrum = ! drawingSpectrum;
+        drawingSignal = false;
+    }
+    else if ( key ==  '4' )
+    {
+        drawingSignal = ! drawingSignal;
+        drawingSpectrum = false;
     }
 }
 
@@ -361,11 +385,13 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     //calculate the fft
     fft->setSignal(monoMix);
     float* curFft = fft->getAmplitude();
-    memcpy(&audioBins[0], curFft, sizeof(float) * fft->getBinSize());
-    normalize(audioBins);
+    memcpy(&audioFFTBins[0], curFft, sizeof(float) * fft->getBinSize());
+    memcpy(&audioSignal[0], input, sizeof(float) * bufferSize);
+    normalize(audioFFTBins);
     
     soundMutex.lock();
-    middleBins = audioBins;
+    middleFFTBins = audioFFTBins;
+    middleSignal = audioSignal;
     soundMutex.unlock();
 }
 

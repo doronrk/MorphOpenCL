@@ -10,3 +10,8 @@ ideas for improvements:
 
 demo:
     - well calibrated for When I'm Small
+
+
+stuff to look into:
+    - point light
+    - of particle physics
