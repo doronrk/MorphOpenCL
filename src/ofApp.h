@@ -22,19 +22,56 @@
 
 #include "ofMain.h"
 #include "ofxFft.h"
-
+#include "MSAOpenCL.h"
 class ofApp : public ofBaseApp{
     
 
 public:
     enum DrawMode { CUBE, FACE, SPECTRUM, SIGNAL};
+    
+    //Particle type - contains all information about particle except particle's position.
+    typedef struct{
+        float4 target;  //target point where to fly
+        float speed;    //speed of flying
+        float dummy1;
+        float dummy2;
+        float dummy3;
+    } Particle;
+    
+    /*
+     Dummy fields are needed to comply OpenCL alignment rule:
+     sizeof(float4) = 4*4=16,
+     sizeof(float) = 4,
+     so overall structure size should divide to 16 and 4.
+     Without dummies the size if sizeof(float4)+sizeof(float)=20, so we add
+     three dummies to have size 32 bytes.
+     */
+    
+    msa::OpenCL			opencl;
+    
+    msa::OpenCLBufferManagedT<Particle>	particles; // vector of Particles on host and corresponding clBuffer on device
+    msa::OpenCLBufferManagedT<float4> particlePos; // vector of particle positions on host and corresponding clBuffer on device
+    GLuint vbo;
+    
+    int N = 1000000; //Number of particles
+    //int N = 10000;
+
+    
+    /*
+     Dummy fields are needed to comply OpenCL alignment rule:
+     sizeof(float4) = 4*4=16,
+     sizeof(float) = 4,
+     so overall structure size should divide to 16 and 4.
+     Without dummies the size if sizeof(float4)+sizeof(float)=20, so we add
+     three dummies to have size 32 bytes.
+     */
 
     void setup();
     void update();
     void draw();
     
     void morphToCube( bool setPos );            //Morphing to cube
-    void morphToFace(vector<ofPoint> facePoints, int w, int h);                         //Morphing to face
+    void morphToFace(vector< vector<float> > faceMatrix);                         //Morphing to face
     void doFaceWave();
     void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
     void morphToSignal(vector<float> bins);     //Morphing to frequency signal
@@ -61,9 +98,8 @@ private:
     ofxFft* fft;
     ofMutex soundMutex;
     vector<float> drawFFTBins, middleFFTBins, audioFFTBins, drawSignal, middleSignal, audioSignal;
-    vector<ofPoint> facePoints;
-    int faceWidth;
-    int faceHeight;
+    vector< vector<float> > faceMatrix;
+    vector< vector<vector<ofApp::Particle*> > > faceParticles;
     ofSoundStream soundStream;
     
     int nOutputChannels;
@@ -71,6 +107,9 @@ private:
     int sampleRate;
     int bufferSize;
     int nBuffers;
+    
+    float faceScale = 3;
+
     
     float portionOfSpecToDraw;
     float freqScalingExponent;
