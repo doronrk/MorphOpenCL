@@ -25,13 +25,17 @@
 
 class ofApp : public ofBaseApp{
     
+
 public:
+    enum DrawMode { CUBE, FACE, SPECTRUM, SIGNAL};
+
     void setup();
     void update();
     void draw();
     
     void morphToCube( bool setPos );            //Morphing to cube
-    void morphToFace();                         //Morphing to face
+    void morphToFace(vector<ofPoint> facePoints, int w, int h);                         //Morphing to face
+    void doFaceWave();
     void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
     void morphToSignal(vector<float> bins);     //Morphing to frequency signal
 
@@ -57,6 +61,9 @@ private:
     ofxFft* fft;
     ofMutex soundMutex;
     vector<float> drawFFTBins, middleFFTBins, audioFFTBins, drawSignal, middleSignal, audioSignal;
+    vector<ofPoint> facePoints;
+    int faceWidth;
+    int faceHeight;
     ofSoundStream soundStream;
     
     int nOutputChannels;
@@ -75,11 +82,10 @@ private:
     float faceParticleSpeed;
     float cubeParticleSpeed;
 
-    
-    bool drawingSpectrum;
+    DrawMode drawMode;
     bool suspended;
-    bool drawingSignal;
-    
-    void normalize(vector<float>& data);
+    bool faceWave;
 
+    void normalize(vector<float>& data);
+    void loadImage(const char* name);
 };

@@ -27,6 +27,7 @@ msa::OpenCLBufferManagedT<float4> particlePos; // vector of particle positions o
 GLuint vbo;
 
 int N = 1000000; //Number of particles
+//int N = 10000;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -49,7 +50,7 @@ void ofApp::setup(){
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(1);
+    soundStream.setDeviceID(0);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
@@ -68,7 +69,8 @@ void ofApp::setup(){
     //Camera
 	cam.setDistance(800);
     cam.setFov(60.0);
-    cam.disableMouseInput();
+//    cam.disableMouseInput();
+    cam.enableMouseInput();
     
     //OpenCL
 	opencl.setupFromOpenGL();
@@ -85,11 +87,42 @@ void ofApp::setup(){
     particles.initBuffer( N );
     particlePos.initFromGLObject( vbo, N );
     
-    drawingSpectrum = false;
+    // load the face
+    const char* imageName = "ksenia.jpg";
+    loadImage(imageName);
+    
+    faceWave = false;
     suspended = false;
-    drawingSignal = false;
-    morphToFace();
+    drawMode = FACE;
 }
+
+void ofApp::loadImage(const char* name)
+{
+    ofPixels pix;
+    ofLoadImage(pix, name);
+    faceWidth = pix.getWidth();
+    faceHeight = pix.getHeight();
+    
+    //Build "distribution array" of brightness
+    int sum = 0;
+    for (int y=0; y<faceHeight; y++) {
+        for (int x=0; x<faceWidth; x++) {
+            sum += pix.getColor(x, y).getBrightness();
+        }
+    }
+    facePoints.resize(sum);
+    
+    int q = 0;
+    for (int y=0; y<faceHeight; y++) {
+        for (int x=0; x<faceWidth; x++) {
+            int v = pix.getColor(x, y).getBrightness();
+            for (int i=0; i<v; i++) {
+                facePoints[q++] = ofPoint( x, y );
+            }
+        }
+    }
+}
+
 
 //--------------------------------------------------------------
 void ofApp::update(){
@@ -121,7 +154,7 @@ void ofApp::draw(){
 
     //camera rotate
     float time = ofGetElapsedTimef();
-    cam.orbit( sin(time*0.25) * 6, 0, 600, ofPoint( 0, 0, 0 ) );
+//    cam.orbit( sin(time*0.25) * 6, 0, 600, ofPoint( 0, 0, 0 ) );
     cam.begin();
     
     //Enabling "addition" blending mode to sum up particles brightnesses
@@ -137,14 +170,16 @@ void ofApp::draw(){
 	glDrawArrays(GL_POINTS, 0, N );
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
     
-    if (drawingSpectrum && !suspended)
-    {
-        morphToSpectrum(drawFFTBins);
-    } else if (drawingSignal)
-    {
-        morphToSignal(drawSignal);
-    }
     
+    switch(drawMode)
+    {
+        case CUBE  : morphToCube(true);   break;
+        case FACE  :
+//            morphToFace(facePoints, faceWidth, faceHeight);
+            break;
+        case SPECTRUM  : morphToSpectrum(drawFFTBins);   break;
+        case SIGNAL  : morphToSignal(drawSignal);   break;
+    }
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
     cam.end();
@@ -211,7 +246,6 @@ void ofApp::morphToSpectrum(vector<float> bins)
 
 //--------------------------------------------------------------
 void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
-
 	for(int i=0; i<N; i++) {
 		//Getting random point at cube
         float rad = 90;
@@ -252,9 +286,25 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
     }
 }
 
+void ofApp::doFaceWave()
+{
+    float time = ofGetElapsedTimef();
+    float height = sin(time) * 300;
+    ofPushStyle();
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(2.0);
+        ofNoFill();
+        float lineWidth = 600;
+        ofBeginShape();
+        ofVertex(-lineWidth, height, 0.0);
+        ofVertex(lineWidth, height, 0.0);
+        ofEndShape(false);
+    ofPopStyle();
+}
+
 
 //--------------------------------------------------------------
-void ofApp::morphToFace() {      //Morphing to face
+void ofApp::morphToFace(vector<ofPoint> facePoints, int w, int h) {      //Morphing to face
     //All drawn particles have equal brightness, so to achieve face-like
     //particles configuration by placing different number of particles
     //at each pixel and draw them in "addition blending" mode.
@@ -262,30 +312,29 @@ void ofApp::morphToFace() {      //Morphing to face
     //Loading image
     //(Currently we recalculate distribution each time
     //- so try to use diferent images for morph, selected randomly)
-    ofPixels pix;
-    ofLoadImage(pix, "ksenia.jpg");
-//    ofLoadImage(pix, "doron.jpeg");
-    int w = pix.getWidth();
-    int h = pix.getHeight();
-
-    //Build "distribution array" of brightness
-    int sum = 0;
-    for (int y=0; y<h; y++) {
-        for (int x=0; x<w; x++) {
-            sum += pix.getColor(x, y).getBrightness();
-        }
-    }
-    vector<ofPoint> tPnt( sum );
-    
-    int q = 0;
-    for (int y=0; y<h; y++) {
-        for (int x=0; x<w; x++) {
-            int v = pix.getColor(x, y).getBrightness();
-            for (int i=0; i<v; i++) {
-                tPnt[q++] = ofPoint( x, y );
-            }
-        }
-    }
+//    ofPixels pix;
+//    ofLoadImage(pix, "ksenia.jpg");
+//    int w = pix.getWidth();
+//    int h = pix.getHeight();
+//
+//    //Build "distribution array" of brightness
+//    int sum = 0;
+//    for (int y=0; y<h; y++) {
+//        for (int x=0; x<w; x++) {
+//            sum += pix.getColor(x, y).getBrightness();
+//        }
+//    }
+//    vector<ofPoint> tPnt( sum );
+//    
+//    int q = 0;
+//    for (int y=0; y<h; y++) {
+//        for (int x=0; x<w; x++) {
+//            int v = pix.getColor(x, y).getBrightness();
+//            for (int i=0; i<v; i++) {
+//                tPnt[q++] = ofPoint( x, y );
+//            }
+//        }
+//    }
     
     //Set up particles
     float scl = 2;
@@ -293,25 +342,27 @@ void ofApp::morphToFace() {      //Morphing to face
     float noisey = 0.5;
     float noisez = 5.0;
 
+    int sum = facePoints.size();
+    cerr << "sum: " << sum << endl;
     for(int i=0; i<N; i++) {
 		Particle &p = particles[i];
         
-        //целевая точка
-        int q = ofRandom( 0, sum );
-        ofPoint pnt = tPnt[ q ];
+//        int q = ofRandom( 0, sum );
+        int q = i % sum;
+        ofPoint pnt = facePoints[q];
         pnt.x -= w/2;   //centering
         pnt.y -= h/2;
         pnt.x *= scl;       //scaling
         pnt.y *= -scl;
         
-        //add noise to x, y
+//        add noise to x, y
         pnt.x += ofRandom( -scl/2, scl/2 );
         pnt.y += ofRandom( -scl/2, scl/2 );
         
         pnt.x += ofRandom( -noisex, noisex );
         pnt.y += ofRandom( -noisey, noisey );
         
-        //peojection on cylinder
+        //projection on cylinder
         float Rad = w * scl * 0.4;
         pnt.z = sqrt( fabs( Rad * Rad - pnt.x * pnt.x ) ) - Rad;
         
@@ -325,8 +376,14 @@ void ofApp::morphToFace() {      //Morphing to face
 
     }
     
+//    if (faceWave)
+//    {
+//        doFaceWave();
+//    }
+    
     //upload to GPU
     particles.writeToDevice();
+    particlePos.writeToDevice();
 }
 
 
@@ -334,23 +391,24 @@ void ofApp::morphToFace() {      //Morphing to face
 void ofApp::keyPressed(int key){
     if ( key == '1' )
     {
-        morphToCube( false );
-        drawingSpectrum = false;
+        drawMode = CUBE;
     }
     else if ( key == '2' )
     {
-        morphToFace();
-        drawingSpectrum = false;
+        drawMode = FACE;
+        morphToFace(facePoints, faceWidth, faceHeight);
     }
     else if ( key ==  '3' )
     {
-        drawingSpectrum = ! drawingSpectrum;
-        drawingSignal = false;
+        drawMode = SPECTRUM;
     }
     else if ( key ==  '4' )
     {
-        drawingSignal = ! drawingSignal;
-        drawingSpectrum = false;
+        drawMode = SIGNAL;
+    }
+    else if ( key == '9')
+    {
+        faceWave = ! faceWave;
     }
 }
 
