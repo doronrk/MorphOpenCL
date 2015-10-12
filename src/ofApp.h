@@ -72,7 +72,8 @@ public:
     
     void morphToCube( bool setPos );            //Morphing to cube
     void morphToFace(vector< vector<float> > faceMatrix);                         //Morphing to face
-    void doFaceWave();
+    void doFaceSpectrum(vector<float> bins);
+    void doFaceSplit();
     void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
     void morphToSignal(vector<float> bins);     //Morphing to frequency signal
 
@@ -98,6 +99,8 @@ private:
     ofxFft* fft;
     ofMutex soundMutex;
     vector<float> drawFFTBins, middleFFTBins, audioFFTBins, drawSignal, middleSignal, audioSignal;
+    vector<float> downsampledBins;
+
     vector< vector<float> > faceMatrix;
     vector< vector<vector<ofApp::Particle*> > > faceParticles;
     ofSoundStream soundStream;
@@ -120,6 +123,9 @@ private:
     float spectrumParticleSpeed;
     float faceParticleSpeed;
     float cubeParticleSpeed;
+    
+    int yFaceWave;
+    int yFaceWaveDelta;
 
     DrawMode drawMode;
     bool suspended;
@@ -127,4 +133,5 @@ private:
 
     void normalize(vector<float>& data);
     void loadImage(const char* name);
+    void downsampleBins(vector<float>& target, vector<float>& source);
 };

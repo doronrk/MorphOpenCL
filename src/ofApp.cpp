@@ -22,7 +22,7 @@ void ofApp::setup(){
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(0);
+    soundStream.setDeviceID(4);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
@@ -60,12 +60,25 @@ void ofApp::setup(){
     particlePos.initFromGLObject( vbo, N );
     
     // load the face
-    const char* imageName = "ksenia.jpg";
+    const char* imageName = "ksenia256.jpg";
     loadImage(imageName);
+    downsampledBins.resize(faceMatrix.size(), 0);
+//    downsampledBins.resize(8, 0);
+    
+    yFaceWave = 0;
+    yFaceWaveDelta = 1;
     
     faceWave = false;
     suspended = false;
     drawMode = FACE;
+    
+//    static const int testSourceArr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+//    static const int testTargetArr[] = {0, 0, 0, 0, 0};
+//
+//    vector<float> testSource (testSourceArr, testSourceArr + sizeof(testSourceArr) / sizeof(testSourceArr[0]) );
+//    vector<float> testTarget (testTargetArr, testTargetArr + sizeof(testTargetArr) / sizeof(testTargetArr[0]) );
+//    
+//    downsampleBins(testTarget, testSource);
 }
 
 void ofApp::loadImage(const char* name)
@@ -88,11 +101,39 @@ void ofApp::loadImage(const char* name)
             sumBrightness += brightness;
         }
     }
-    cerr << "sumBrightness: " << sumBrightness << endl;
     for (int y=0; y< height; y++) {
         for (int x=0; x< width; x++) {
             faceMatrix[y][x] = faceMatrix[y][x] / sumBrightness;
         }
+    }
+}
+
+//--------------------------------------------------------------
+void ofApp::downsampleBins(vector<float>& target, vector<float>& source)
+{
+    int nTargetBins = target.size();
+    if (nTargetBins < 1)
+    {
+        cerr << "nTargetBins < 1" << endl;
+        return;
+    }
+    int nSourceBins = source.size();
+    if (nTargetBins > nSourceBins)
+    {
+        cerr << "nTargetBins > nSourceBins" << endl;
+        return;
+    }
+    int ratio = nSourceBins / nTargetBins;
+    for (int targetBin = 0; targetBin < nTargetBins; targetBin++)
+    {
+        float sum = 0;
+        for (int sourceBin = 0; sourceBin < ratio; sourceBin++)
+        {
+            int i = targetBin*ratio + sourceBin;
+            sum += source[i];
+        }
+        float average = sum / (float) ratio;
+        target[targetBin] = average;
     }
 }
 
@@ -118,7 +159,9 @@ void ofApp::update(){
     }
     drawSignal = middleSignal;
     soundMutex.unlock();
-    normalize(drawFFTBins);
+    downsampleBins(downsampledBins, drawFFTBins);
+//    normalize(drawFFTBins);
+    normalize(downsampledBins);
 }
 
 //--------------------------------------------------------------
@@ -149,10 +192,18 @@ void ofApp::draw(){
         case CUBE  : morphToCube(true);   break;
         case FACE  :
 //            morphToFace(faceMatrix);
-            doFaceWave();
+//            doFaceSplit();
+//            downsampleBins(downsampledBins, drawFFTBins);
+            doFaceSpectrum(downsampledBins);
             break;
-        case SPECTRUM  : morphToSpectrum(drawFFTBins);   break;
-        case SIGNAL  : morphToSignal(drawSignal);   break;
+        case SPECTRUM  :
+//            morphToSpectrum(drawFFTBins);
+//            downsampleBins(downsampledBins, drawFFTBins);
+            morphToSpectrum(downsampledBins);
+            break;
+        case SIGNAL  :
+            morphToSignal(drawSignal);
+            break;
     }
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
@@ -215,8 +266,6 @@ void ofApp::morphToSpectrum(vector<float> bins)
     particles.writeToDevice();
 }
 
-
-
 //--------------------------------------------------------------
 void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
 	for(int i=0; i<N; i++) {
@@ -259,24 +308,35 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
     }
 }
 
-void ofApp::doFaceWave()
+void ofApp::doFaceSpectrum(vector<float> bins)
 {
-    int sum = 0;
+    if (bins.size() != faceParticles.size())
+    {
+        cerr << "bins.size() != faceParticles.size(), in doFaceSpectrum" << endl;
+        cerr << "bins.size(): " << bins.size() << endl;
+        cerr << "faceParticles.size(): " << faceParticles.size() << endl;
+        return;
+    }
     for (int y = 0; y < faceParticles.size(); y++)
     {
+        float magnitude = bins[y];
         for (int x = 0; x < faceParticles[0].size(); x++)
         {
             vector<Particle*> particlesAtPixel = faceParticles[y][x];
             for (int p = 0; p < particlesAtPixel.size(); p++)
             {
                 Particle* part = particlesAtPixel[p];
-                sum++;
+                part->target.set(part->target.x - magnitude, part->target.y, part->target.z, 0);
             }
         }
     }
-    cerr << "sum faceParticles: " << sum << endl;
-    cerr << "sum particles: " << particles.size() << endl;
+    particles.writeToDevice();
+}
 
+
+//-----------------------------------------------------------------------------------------
+void ofApp::doFaceSplit()
+{
     float time = ofGetElapsedTimef();
     int faceHeight = faceParticles.size();
     float height = sin(time) * faceHeight;
@@ -293,6 +353,7 @@ void ofApp::doFaceWave()
         if (faceHeight > 0)
         {
             int y = ((height) + faceHeight) / 2;
+            cerr << "y: " << y << endl;
             vector<vector<Particle*> > particleRow = faceParticles[y];
             for (int x = 0; x < particleRow.size(); x++)
             {
@@ -384,21 +445,6 @@ void ofApp::morphToFace(vector< vector<float> > faceMatrix) {      //Morphing to
         p.speed = faceParticleSpeed;
         
     }
-    
-//    int sum = 0;
-//    for (int y = 0; y < faceParticles.size(); y++)
-//    {
-//        for (int x = 0; x < faceParticles[0].size(); x++)
-//        {
-//            vector<Particle*> particlesAtPixel = faceParticles[y][x];
-//            for (int p = 0; p < particlesAtPixel.size(); p++)
-//            {
-//                Particle* part = particlesAtPixel[p];
-//                sum++;
-//            }
-//        }
-//    }
-//    cerr << "sum: " << sum << endl;
     
     //upload to GPU
     particles.writeToDevice();
