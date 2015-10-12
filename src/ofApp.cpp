@@ -79,8 +79,9 @@ void ofApp::setup(){
     yFaceWaveDelta = 1;
     
     faceWave = false;
+    instructionsHidden = false;
     suspended = false;
-    drawMode = FACE;
+    drawMode = TIME;
     
 //    static const int testSourceArr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 //    static const int testTargetArr[] = {0, 0, 0, 0, 0};
@@ -204,29 +205,34 @@ void ofApp::draw(){
     
     switch(drawMode)
     {
-        case CUBE  : morphToCube(true);   break;
-        case FACE  :
-//            morphToFace(faceMatrix);
-//            doFaceSplit();
-//            downsampleBins(downsampledBins, drawFFTBins);
-            doFaceSpectrum(downsampledBins);
-//            doFaceMelt(downsampledBins, 2);
-            break;
-        case SPECTRUM  :
-    //            morphToSpectrum(drawFFTBins);
-    //            downsampleBins(downsampledBins, drawFFTBins);
-            morphToSpectrum(downsampledBins);
-            break;
-        case SIGNAL  :
+        case TIME:
             morphToSignal(drawSignal);
+            break;
+        case FREQUENCY:
+//            morphToSpectrum(downsampledBins);
+            morphToSpectrum(drawFFTBins);
+            break;
+        case FACE_FREQUENCY:
+            doFaceSpectrum(downsampledBins);
+            break;
+        case MELT:
+            doFaceMelt(downsampledBins, 0);
+            break;
+        case SPLIT:
+            doFaceSplit();
             break;
     }
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
     cam.end();
     
-    ofSetColor( ofColor::white );
-//    ofDrawBitmapString( "1 - morph to cube, 2 - morph to face", 20, 20 );
+    if (! instructionsHidden)
+    {
+        ofSetColor( ofColor::white );
+        ofDrawBitmapString( "1 - time domain, 2 - frequency domain, 3 - face FFT visualizer, 4 - face melt (bug that looked cool), 5 - split (bug that looked cool)", 20, 20 );
+        ofDrawBitmapString( "Responds best to white noise and music. Try looking at the face from the side in mode 3. Try melting the top of the face more than the bottom in mode 4.", 20, 40 );
+        ofDrawBitmapString( "press 'i' to show/hide these instructions", 20, 60 );
+    }
     
 }
 
@@ -403,11 +409,11 @@ void ofApp::doFaceSplit()
         ofSetLineWidth(2.0);
         ofNoFill();
         float lineWidth = 600;
-        ofBeginShape();
-        ofVertex(-lineWidth, height, 0.0);
-        ofVertex(lineWidth, height, 0.0);
-        ofEndShape(false);
-    
+//        ofBeginShape();
+//        ofVertex(-lineWidth, height, 0.0);
+//        ofVertex(lineWidth, height, 0.0);
+//        ofEndShape(false);
+//    
         if (faceHeight > 0)
         {
             int y = ((height) + faceHeight) / 2;
@@ -513,30 +519,33 @@ void ofApp::morphToFace(vector< vector<float> > faceMatrix) {      //Morphing to
 void ofApp::keyPressed(int key){
     if ( key == '1' )
     {
-        drawMode = CUBE;
-//        cam.setGlobalPosition(0, 0, 800);
+        drawMode = TIME;
     }
     else if ( key == '2' )
     {
-        drawMode = FACE;
-        morphToFace(faceMatrix);
-//        cam.setGlobalPosition(0, 0, 800);
+        drawMode = FREQUENCY;
 
     }
     else if ( key ==  '3' )
     {
-        drawMode = SPECTRUM;
-//        cam.setGlobalPosition(0, 160, 800);
+        morphToFace(faceMatrix);
+        drawMode = FACE_FREQUENCY;
     }
     else if ( key ==  '4' )
     {
-        drawMode = SIGNAL;
-//        cam.setGlobalPosition(0, 160, 800);
+        morphToFace(faceMatrix);
+        drawMode = MELT;
     }
-    else if ( key == '9')
+    else if ( key ==  '5' )
     {
-        faceWave = ! faceWave;
+        morphToFace(faceMatrix);
+        drawMode = SPLIT;
     }
+    else if (key == 'i')
+    {
+        instructionsHidden = ! instructionsHidden;
+    }
+    cam.reset();
 }
 
 //--------------------------------------------------------------

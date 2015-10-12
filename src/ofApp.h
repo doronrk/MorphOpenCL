@@ -27,7 +27,7 @@ class ofApp : public ofBaseApp{
     
 
 public:
-    enum DrawMode { CUBE, FACE, SPECTRUM, SIGNAL};
+    enum DrawMode {TIME, FREQUENCY, FACE_FREQUENCY, MELT, SPLIT};
     
     //Particle type - contains all information about particle except particle's position.
     typedef struct{
@@ -135,6 +135,8 @@ private:
     DrawMode drawMode;
     bool suspended;
     bool faceWave;
+    
+    bool instructionsHidden;
 
     void normalize(vector<float>& data);
     void cutoff(vector<float>& data, float cutoff, float ignoreBelow);
