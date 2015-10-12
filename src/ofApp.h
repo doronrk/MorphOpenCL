@@ -74,6 +74,7 @@ public:
     void morphToFace(vector< vector<float> > faceMatrix);                         //Morphing to face
     void doFaceSpectrum(vector<float> bins);
     void doFaceSplit();
+    void doFaceMelt(vector<float> bins, int direction);
     void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
     void morphToSignal(vector<float> bins);     //Morphing to frequency signal
 
@@ -127,13 +128,16 @@ private:
     
     int yFaceWave;
     int yFaceWaveDelta;
+    
+    int ySpectrumVerticalShift;
+    float ignoreFFTbelow;
 
     DrawMode drawMode;
     bool suspended;
     bool faceWave;
 
     void normalize(vector<float>& data);
-    void cutoff(vector<float>& data, float cutoff);
+    void cutoff(vector<float>& data, float cutoff, float ignoreBelow);
     void loadImage(const char* name);
     void downsampleBins(vector<float>& target, vector<float>& source);
 };

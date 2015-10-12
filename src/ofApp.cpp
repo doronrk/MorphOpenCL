@@ -12,16 +12,19 @@ void ofApp::setup(){
     faceParticleSpeed = 0.04;
     cubeParticleSpeed = 0.04;
     
+    ySpectrumVerticalShift = 140;
+    ignoreFFTbelow = .01;
+    
     portionOfSpecToDraw = 1.0;
     
 //    freqScalingExponent = 1.7;
 //    amplitudeScalingExponent = 1.6;
 //    
-//    freqScalingExponent = 1.2;
-    amplitudeScalingExponent = 2.0;
+    freqScalingExponent = 1.2;
+    amplitudeScalingExponent = 1.7;
     
     signalAmplitudeScale = 5000.0;
-    spectrumAmplitudeScale = 100.0;
+    spectrumAmplitudeScale = 1000.0;
     if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
         ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
     }
@@ -45,7 +48,8 @@ void ofApp::setup(){
     soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
     
     //Camera
-	cam.setDistance(800);
+//	cam.setDistance(800);
+    cam.setGlobalPosition(0, 0, 800);
     cam.setFov(60.0);
 //    cam.disableMouseInput();
     cam.enableMouseInput();
@@ -160,15 +164,19 @@ void ofApp::update(){
     soundMutex.lock();
     for (int i = 0; i < drawFFTBins.size(); i++)
     {
-        drawFFTBins[i] = abs(middleFFTBins[i] * (1 + pow(i, freqScalingExponent)/drawFFTBins.size()));
-        drawFFTBins[i] = pow(drawFFTBins[i], amplitudeScalingExponent);
+        if (i < ignoreFFTbelow * drawFFTBins.size())
+        {
+            drawFFTBins[i] = 0.0;
+        } else
+        {
+            drawFFTBins[i] = abs(middleFFTBins[i] * (1 + pow(i, freqScalingExponent)/drawFFTBins.size()));
+            drawFFTBins[i] = pow(drawFFTBins[i], amplitudeScalingExponent);
+        }
     }
     drawSignal = middleSignal;
     soundMutex.unlock();
     downsampleBins(downsampledBins, drawFFTBins);
-    cutoff(drawSignal, 0.4);
-//    normalize(drawFFTBins);
-//    normalize(downsampledBins);
+    cutoff(drawSignal, 0.4, 0);
 }
 
 //--------------------------------------------------------------
@@ -202,10 +210,11 @@ void ofApp::draw(){
 //            doFaceSplit();
 //            downsampleBins(downsampledBins, drawFFTBins);
             doFaceSpectrum(downsampledBins);
+//            doFaceMelt(downsampledBins, 2);
             break;
         case SPECTRUM  :
-//            morphToSpectrum(drawFFTBins);
-//            downsampleBins(downsampledBins, drawFFTBins);
+    //            morphToSpectrum(drawFFTBins);
+    //            downsampleBins(downsampledBins, drawFFTBins);
             morphToSpectrum(downsampledBins);
             break;
         case SIGNAL  :
@@ -251,16 +260,20 @@ void ofApp::morphToSignal(vector<float> signal)
 void ofApp::morphToSpectrum(vector<float> bins)
 {
     float spectrumWidth = 600;
-    int nBins = bins.size();
+    int ignoreFirst = bins.size() * ignoreFFTbelow;
+    int nBins = bins.size() - ignoreFirst;
     float binWidth = spectrumWidth / nBins;
-
     if (nBins > 0)
     {
         for (int i = 0; i < N; i++)
         {
-            int binNumber = i % nBins;
+            int binNumber = (i % nBins);// + ignoreFirst;
             float px = ((binNumber * binWidth) * 2) - spectrumWidth;
-            float py = bins[binNumber] * spectrumAmplitudeScale; // magnitude of the bin
+            float py = bins[binNumber + ignoreFirst] * spectrumAmplitudeScale - ySpectrumVerticalShift; // magnitude of the bin
+            if (py > 300)
+            {
+                py = 300;
+            }
             float pz = 0.0;
             
             //Setting to particle
@@ -315,13 +328,11 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
     }
 }
 
-void ofApp::doFaceSpectrum(vector<float> bins)
+void ofApp::doFaceMelt(vector<float> bins, int direction)
 {
     if (bins.size() != faceParticles.size())
     {
-        cerr << "bins.size() != faceParticles.size(), in doFaceSpectrum" << endl;
-        cerr << "bins.size(): " << bins.size() << endl;
-        cerr << "faceParticles.size(): " << faceParticles.size() << endl;
+        cerr << "bins.size() != faceParticles.size(), in doFaceMelt" << endl;
         return;
     }
     for (int y = 0; y < faceParticles.size(); y++)
@@ -333,7 +344,47 @@ void ofApp::doFaceSpectrum(vector<float> bins)
             for (int p = 0; p < particlesAtPixel.size(); p++)
             {
                 Particle* part = particlesAtPixel[p];
-                part->target.set(part->target.x - magnitude, part->target.y, part->target.z, 0);
+                switch(direction)
+                {
+                    case 0:
+                        part->target.set(part->target.x - magnitude * 3.0, part->target.y, part->target.z, 0);
+                        break;
+                    case 1:
+                        part->target.set(part->target.x, part->target.y - magnitude * 3.0, part->target.z, 0);
+                        break;
+                    case 2:
+                        part->target.set(part->target.x, part->target.y, part->target.z - magnitude * 3.0, 0);
+                        break;
+                }
+            }
+        }
+    }
+    particles.writeToDevice();
+}
+
+void ofApp::doFaceSpectrum(vector<float> bins)
+{
+    if (bins.size() != faceParticles.size())
+    {
+        cerr << "bins.size() != faceParticles.size(), in doFaceSpectrum" << endl;
+        return;
+    }
+    int width = faceMatrix[0].size();
+    float Rad = width * faceScale * 0.4;
+    for (int y = 0; y < faceParticles.size(); y++)
+    {
+        float magnitude = bins[y];
+        for (int x = 0; x < faceParticles[0].size(); x++)
+        {
+            vector<Particle*> particlesAtPixel = faceParticles[y][x];
+            for (int p = 0; p < particlesAtPixel.size(); p++)
+            {
+                Particle* part = particlesAtPixel[p];
+                //projection on cylinder
+                float px = part->target.x;
+                float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
+                pz = pz + magnitude * 100;
+                part->target.set(part->target.x, part->target.y, pz, 0);
             }
         }
     }
@@ -463,19 +514,24 @@ void ofApp::keyPressed(int key){
     if ( key == '1' )
     {
         drawMode = CUBE;
+//        cam.setGlobalPosition(0, 0, 800);
     }
     else if ( key == '2' )
     {
         drawMode = FACE;
         morphToFace(faceMatrix);
+//        cam.setGlobalPosition(0, 0, 800);
+
     }
     else if ( key ==  '3' )
     {
         drawMode = SPECTRUM;
+//        cam.setGlobalPosition(0, 160, 800);
     }
     else if ( key ==  '4' )
     {
         drawMode = SIGNAL;
+//        cam.setGlobalPosition(0, 160, 800);
     }
     else if ( key == '9')
     {
@@ -541,10 +597,11 @@ void ofApp::normalize(vector<float>& data) {
     }
 }
 
-void ofApp::cutoff(vector<float>& data, float cutoff)
+void ofApp::cutoff(vector<float>& data, float cutoff, float ignoreBelow)
 {
+    int begin = ignoreBelow*data.size();
     float maxValue = 0;
-    for (int i = 0; i < data.size(); i++)
+    for (int i = begin; i < data.size(); i++)
     {
         if (data[i] > maxValue)
         {
@@ -553,7 +610,7 @@ void ofApp::cutoff(vector<float>& data, float cutoff)
     }
     if (maxValue > cutoff)
     {
-        for (int i = 0; i < data.size(); i++)
+        for (int i = begin; i < data.size(); i++)
         {
             float portionOfMax = data[i] / maxValue;
             float projectionOntoCutoff = portionOfMax * cutoff;
