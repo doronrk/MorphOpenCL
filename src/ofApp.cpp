@@ -231,6 +231,7 @@ void ofApp::draw(){
         ofSetColor( ofColor::white );
         ofDrawBitmapString( "1 - time domain, 2 - frequency domain, 3 - face FFT visualizer, 4 - face melt (bug that looked cool), 5 - split (bug that looked cool)", 20, 20 );
         ofDrawBitmapString( "Responds best to white noise and music. Try looking at the face from the side in mode 3. Try melting the top of the face more than the bottom in mode 4.", 20, 40 );
+        ofDrawBitmapString( "press 1 - 5 to reset the face", 20, 80 );
         ofDrawBitmapString( "press 'i' to show/hide these instructions", 20, 60 );
     }
     
@@ -389,7 +390,7 @@ void ofApp::doFaceSpectrum(vector<float> bins)
                 //projection on cylinder
                 float px = part->target.x;
                 float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
-                pz = pz + magnitude * 100;
+                pz = pz + magnitude * 300;
                 part->target.set(part->target.x, part->target.y, pz, 0);
             }
         }
@@ -418,6 +419,10 @@ void ofApp::doFaceSplit()
         {
             int y = ((height) + faceHeight) / 2;
             cerr << "y: " << y << endl;
+            if (y >= faceParticles.size())
+            {
+                return;
+            }
             vector<vector<Particle*> > particleRow = faceParticles[y];
             for (int x = 0; x < particleRow.size(); x++)
             {
@@ -545,7 +550,10 @@ void ofApp::keyPressed(int key){
     {
         instructionsHidden = ! instructionsHidden;
     }
-    cam.reset();
+    else if (key != 'i')
+    {
+        cam.reset();
+    }
 }
 
 //--------------------------------------------------------------
