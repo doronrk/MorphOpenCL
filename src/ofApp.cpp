@@ -20,11 +20,11 @@ void ofApp::setup(){
 //    freqScalingExponent = 1.7;
 //    amplitudeScalingExponent = 1.6;
 //    
-    freqScalingExponent = 1.2;
+    freqScalingExponent = 1.4;
     amplitudeScalingExponent = 1.7;
     
-    signalAmplitudeScale = 5000.0;
-    spectrumAmplitudeScale = 1000.0;
+    signalAmplitudeScale = 3000.0;
+    spectrumAmplitudeScale = 400.0;
     if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
         ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
     }
@@ -35,7 +35,8 @@ void ofApp::setup(){
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-    bufferSize = 2048;
+//    bufferSize = 2048;
+    bufferSize = 1024;
     nBuffers = 4;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
     drawFFTBins.resize(fft->getBinSize() * portionOfSpecToDraw);
@@ -265,7 +266,7 @@ void ofApp::morphToSignal(vector<float> signal)
 //--------------------------------------------------------------
 void ofApp::morphToSpectrum(vector<float> bins)
 {
-    float spectrumWidth = 600;
+    float spectrumWidth = 550;
     int ignoreFirst = bins.size() * ignoreFFTbelow;
     int nBins = bins.size() - ignoreFirst;
     float binWidth = spectrumWidth / nBins;
@@ -380,6 +381,9 @@ void ofApp::doFaceSpectrum(vector<float> bins)
     for (int y = 0; y < faceParticles.size(); y++)
     {
         float magnitude = bins[y];
+        magnitude = magnitude * 200;
+//        magnitude = magnitude * (100 + 200 * ((float) y / faceParticles.size()));
+//        magnitude = magnitude * (500 - 200 * ((float) y / faceParticles.size()));
         for (int x = 0; x < faceParticles[0].size(); x++)
         {
             vector<Particle*> particlesAtPixel = faceParticles[y][x];
@@ -389,8 +393,15 @@ void ofApp::doFaceSpectrum(vector<float> bins)
                 //projection on cylinder
                 float px = part->target.x;
                 float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
-                pz = pz + magnitude * 100;
+                pz = pz + magnitude;
+                if (pz > 200)
+                {
+                    float diff = pz - 200;
+                    pz = 200 + diff * .1;
+//                    pz = 300;
+                }
                 part->target.set(part->target.x, part->target.y, pz, 0);
+                part->speed = 1.0;
             }
         }
     }
