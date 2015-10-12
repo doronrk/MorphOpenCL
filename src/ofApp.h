@@ -117,7 +117,8 @@ private:
     float portionOfSpecToDraw;
     float freqScalingExponent;
     float amplitudeScalingExponent;
-    float amplitudeScale;
+    float signalAmplitudeScale;
+    float spectrumAmplitudeScale;
     
     float signalParticleSpeed;
     float spectrumParticleSpeed;
@@ -132,6 +133,7 @@ private:
     bool faceWave;
 
     void normalize(vector<float>& data);
+    void cutoff(vector<float>& data, float cutoff);
     void loadImage(const char* name);
     void downsampleBins(vector<float>& target, vector<float>& source);
 };

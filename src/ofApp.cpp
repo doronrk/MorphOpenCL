@@ -13,16 +13,22 @@ void ofApp::setup(){
     cubeParticleSpeed = 0.04;
     
     portionOfSpecToDraw = 1.0;
-    freqScalingExponent = 1.7;
-    amplitudeScalingExponent = 1.6;
-    amplitudeScale = 500.0;
+    
+//    freqScalingExponent = 1.7;
+//    amplitudeScalingExponent = 1.6;
+//    
+//    freqScalingExponent = 1.2;
+    amplitudeScalingExponent = 2.0;
+    
+    signalAmplitudeScale = 5000.0;
+    spectrumAmplitudeScale = 100.0;
     if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
         ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
     }
     
     // Audio setup
     soundStream.listDevices();
-    soundStream.setDeviceID(4);
+    soundStream.setDeviceID(1);
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
@@ -160,8 +166,9 @@ void ofApp::update(){
     drawSignal = middleSignal;
     soundMutex.unlock();
     downsampleBins(downsampledBins, drawFFTBins);
+    cutoff(drawSignal, 0.4);
 //    normalize(drawFFTBins);
-    normalize(downsampledBins);
+//    normalize(downsampledBins);
 }
 
 //--------------------------------------------------------------
@@ -228,7 +235,7 @@ void ofApp::morphToSignal(vector<float> signal)
         {
             int sampleNumber = i % nSamples;
             float px = ((sampleNumber * sampleWidth) * 2) - signalWidth;
-            float py = signal[sampleNumber] * amplitudeScale;
+            float py = signal[sampleNumber] * signalAmplitudeScale;
             float pz = 0.0;
             
             Particle& p = particles[i];
@@ -253,7 +260,7 @@ void ofApp::morphToSpectrum(vector<float> bins)
         {
             int binNumber = i % nBins;
             float px = ((binNumber * binWidth) * 2) - spectrumWidth;
-            float py = bins[binNumber] * amplitudeScale; // magnitude of the bin
+            float py = bins[binNumber] * spectrumAmplitudeScale; // magnitude of the bin
             float pz = 0.0;
             
             //Setting to particle
@@ -482,7 +489,8 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     vector<float> monoMix;
     monoMix.resize(bufferSize);
     // scale buffer by maxValue
-    bool allZero = true;
+//    float silentThreshold = 0.0001;
+    bool silent = true;
     for (int frame = 0; frame < bufferSize; frame++)
     {
         float sum = 0.0;
@@ -490,14 +498,14 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
         {
             int i = frame*nChannels + channel;
             if (input[i] != 0.0) {
-                allZero = false;
+                silent = false;
             }
             sum = sum + input[i];
         }
         sum = sum / nChannels;
         monoMix[frame] = sum;
     }
-    if (allZero) {
+    if (silent) {
         suspended = true;
     } else if (suspended)
     {
@@ -529,6 +537,27 @@ void ofApp::normalize(vector<float>& data) {
     {
         for(int i = 0; i < data.size(); i++) {
             data[i] /= maxValue;
+        }
+    }
+}
+
+void ofApp::cutoff(vector<float>& data, float cutoff)
+{
+    float maxValue = 0;
+    for (int i = 0; i < data.size(); i++)
+    {
+        if (data[i] > maxValue)
+        {
+            maxValue = data[i];
+        }
+    }
+    if (maxValue > cutoff)
+    {
+        for (int i = 0; i < data.size(); i++)
+        {
+            float portionOfMax = data[i] / maxValue;
+            float projectionOntoCutoff = portionOfMax * cutoff;
+            data[i] = projectionOntoCutoff;
         }
     }
 }
