@@ -84,6 +84,8 @@ void ofApp::setup(){
     suspended = false;
     drawMode = TIME;
     
+    ratchetness = 0.9;
+    
 //    static const int testSourceArr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 //    static const int testTargetArr[] = {0, 0, 0, 0, 0};
 //
@@ -232,7 +234,15 @@ void ofApp::draw(){
         ofSetColor( ofColor::white );
         ofDrawBitmapString( "1 - time domain, 2 - frequency domain, 3 - face FFT visualizer, 4 - face melt (bug that looked cool), 5 - split (bug that looked cool)", 20, 20 );
         ofDrawBitmapString( "Responds best to white noise and music. Try looking at the face from the side in mode 3. Try melting the top of the face more than the bottom in mode 4.", 20, 40 );
-        ofDrawBitmapString( "press 'i' to show/hide these instructions", 20, 60 );
+        ofDrawBitmapString( "press 'i' to show/hide text", 20, 60 );
+
+        stringstream stream;
+        stream << fixed << setprecision(2) << ratchetness;
+        string s = stream.str();
+        std::string rString = "face ratchetness: ";
+        rString.append(s);
+        ofDrawBitmapString(rString , 1050, 670);
+        
     }
     
 }
@@ -401,7 +411,7 @@ void ofApp::doFaceSpectrum(vector<float> bins)
 //                    pz = 300;
                 }
                 part->target.set(part->target.x, part->target.y, pz, 0);
-                part->speed = 1.0;
+                part->speed = ratchetness;
             }
         }
     }
@@ -556,7 +566,26 @@ void ofApp::keyPressed(int key){
     {
         instructionsHidden = ! instructionsHidden;
     }
-    cam.reset();
+    else if (key == OF_KEY_UP)
+    {
+        ratchetness += .05;
+        if (ratchetness > 1.0)
+        {
+            ratchetness = 1.0;
+        }
+    }
+    else if (key == OF_KEY_DOWN)
+    {
+        ratchetness -= .05;
+        if (ratchetness < 0.0)
+        {
+            ratchetness = 0.0;
+        }
+    }
+    if (key != 'i')
+    {
+        cam.reset();
+    }
 }
 
 //--------------------------------------------------------------
