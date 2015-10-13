@@ -20,11 +20,11 @@ void ofApp::setup(){
 //    freqScalingExponent = 1.7;
 //    amplitudeScalingExponent = 1.6;
 //    
-    freqScalingExponent = 1.2;
+    freqScalingExponent = 1.4;
     amplitudeScalingExponent = 1.7;
     
-    signalAmplitudeScale = 5000.0;
-    spectrumAmplitudeScale = 1000.0;
+    signalAmplitudeScale = 3000.0;
+    spectrumAmplitudeScale = 400.0;
     if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
         ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
     }
@@ -35,7 +35,9 @@ void ofApp::setup(){
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-    bufferSize = 2048;
+//    bufferSize = 2048;
+//    bufferSize = 1024;
+    bufferSize = 512;
     nBuffers = 4;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
     drawFFTBins.resize(fft->getBinSize() * portionOfSpecToDraw);
@@ -82,6 +84,8 @@ void ofApp::setup(){
     instructionsHidden = false;
     suspended = false;
     drawMode = TIME;
+    
+    ratchetness = 0.9;
     
 //    static const int testSourceArr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 //    static const int testTargetArr[] = {0, 0, 0, 0, 0};
@@ -229,10 +233,22 @@ void ofApp::draw(){
     if (! instructionsHidden)
     {
         ofSetColor( ofColor::white );
-        ofDrawBitmapString( "1 - time domain, 2 - frequency domain, 3 - face FFT visualizer, 4 - face melt (bug that looked cool), 5 - split (bug that looked cool)", 20, 20 );
-        ofDrawBitmapString( "Responds best to white noise and music. Try looking at the face from the side in mode 3. Try melting the top of the face more than the bottom in mode 4.", 20, 40 );
-        ofDrawBitmapString( "press 1 - 5 to reset the face", 20, 80 );
-        ofDrawBitmapString( "press 'i' to show/hide these instructions", 20, 60 );
+        ofDrawBitmapString( "1 - time domain. Tip: try producing vocal white noise, then singing a vowel", 20, 20 );
+        ofDrawBitmapString( "2 - frequency domain", 20, 40 );
+        ofDrawBitmapString( "3 - face FFT visualizer. Tip: try looking at the face from the side", 20, 60 );
+        ofDrawBitmapString( "4 - face melt (bug that looked cool)", 20, 80 );
+        ofDrawBitmapString( "5 - split (bug that looked cool)", 20, 100 );
+        ofDrawBitmapString( "Responds best to white noise and music.", 20, 120 );
+        ofDrawBitmapString( "use up/down arrow keys to control face ratchetness", 20, 140 );
+        ofDrawBitmapString( "press 'i' to show/hide text", 20, 160 );
+
+        stringstream stream;
+        stream << fixed << setprecision(2) << ratchetness;
+        string s = stream.str();
+        std::string rString = "face ratchetness: ";
+        rString.append(s);
+        ofDrawBitmapString(rString , 1050, 670);
+        
     }
     
 }
@@ -266,7 +282,7 @@ void ofApp::morphToSignal(vector<float> signal)
 //--------------------------------------------------------------
 void ofApp::morphToSpectrum(vector<float> bins)
 {
-    float spectrumWidth = 600;
+    float spectrumWidth = 550;
     int ignoreFirst = bins.size() * ignoreFFTbelow;
     int nBins = bins.size() - ignoreFirst;
     float binWidth = spectrumWidth / nBins;
@@ -381,6 +397,9 @@ void ofApp::doFaceSpectrum(vector<float> bins)
     for (int y = 0; y < faceParticles.size(); y++)
     {
         float magnitude = bins[y];
+        magnitude = magnitude * 200;
+//        magnitude = magnitude * (100 + 200 * ((float) y / faceParticles.size()));
+//        magnitude = magnitude * (500 - 200 * ((float) y / faceParticles.size()));
         for (int x = 0; x < faceParticles[0].size(); x++)
         {
             vector<Particle*> particlesAtPixel = faceParticles[y][x];
@@ -390,8 +409,15 @@ void ofApp::doFaceSpectrum(vector<float> bins)
                 //projection on cylinder
                 float px = part->target.x;
                 float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
-                pz = pz + magnitude * 300;
+                pz = pz + magnitude;
+                if (pz > 200)
+                {
+                    float diff = pz - 200;
+                    pz = 200 + diff * .1;
+//                    pz = 300;
+                }
                 part->target.set(part->target.x, part->target.y, pz, 0);
+                part->speed = ratchetness;
             }
         }
     }
@@ -419,10 +445,6 @@ void ofApp::doFaceSplit()
         {
             int y = ((height) + faceHeight) / 2;
             cerr << "y: " << y << endl;
-            if (y >= faceParticles.size())
-            {
-                return;
-            }
             vector<vector<Particle*> > particleRow = faceParticles[y];
             for (int x = 0; x < particleRow.size(); x++)
             {
@@ -550,7 +572,23 @@ void ofApp::keyPressed(int key){
     {
         instructionsHidden = ! instructionsHidden;
     }
-    else if (key != 'i')
+    else if (key == OF_KEY_UP)
+    {
+        ratchetness += .05;
+        if (ratchetness > 1.0)
+        {
+            ratchetness = 1.0;
+        }
+    }
+    else if (key == OF_KEY_DOWN)
+    {
+        ratchetness -= .05;
+        if (ratchetness < 0.0)
+        {
+            ratchetness = 0.0;
+        }
+    }
+    if (key != 'i')
     {
         cam.reset();
     }

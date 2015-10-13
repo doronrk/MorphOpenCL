@@ -23,6 +23,7 @@
 #include "ofMain.h"
 #include "ofxFft.h"
 #include "MSAOpenCL.h"
+#include <string>     // std::string, std::to_string
 class ofApp : public ofBaseApp{
     
 
@@ -135,6 +136,8 @@ private:
     DrawMode drawMode;
     bool suspended;
     bool faceWave;
+    
+    float ratchetness;
     
     bool instructionsHidden;
 
