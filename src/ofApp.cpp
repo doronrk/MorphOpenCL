@@ -36,7 +36,8 @@ void ofApp::setup(){
     nInputChannels = 2;
     sampleRate = 44100;
 //    bufferSize = 2048;
-    bufferSize = 1024;
+//    bufferSize = 1024;
+    bufferSize = 512;
     nBuffers = 4;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
     drawFFTBins.resize(fft->getBinSize() * portionOfSpecToDraw);
@@ -232,9 +233,14 @@ void ofApp::draw(){
     if (! instructionsHidden)
     {
         ofSetColor( ofColor::white );
-        ofDrawBitmapString( "1 - time domain, 2 - frequency domain, 3 - face FFT visualizer, 4 - face melt (bug that looked cool), 5 - split (bug that looked cool)", 20, 20 );
-        ofDrawBitmapString( "Responds best to white noise and music. Try looking at the face from the side in mode 3. Try melting the top of the face more than the bottom in mode 4.", 20, 40 );
-        ofDrawBitmapString( "press 'i' to show/hide text", 20, 60 );
+        ofDrawBitmapString( "1 - time domain. Tip: try producing vocal white noise, then singing a vowel", 20, 20 );
+        ofDrawBitmapString( "2 - frequency domain", 20, 40 );
+        ofDrawBitmapString( "3 - face FFT visualizer. Tip: try looking at the face from the side", 20, 60 );
+        ofDrawBitmapString( "4 - face melt (bug that looked cool)", 20, 80 );
+        ofDrawBitmapString( "5 - split (bug that looked cool)", 20, 100 );
+        ofDrawBitmapString( "Responds best to white noise and music.", 20, 120 );
+        ofDrawBitmapString( "use up/down arrow keys to control face ratchetness", 20, 140 );
+        ofDrawBitmapString( "press 'i' to show/hide text", 20, 160 );
 
         stringstream stream;
         stream << fixed << setprecision(2) << ratchetness;
