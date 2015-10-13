@@ -76,7 +76,7 @@ public:
     void doFaceSpectrum(vector<float> bins);
     void doFaceSplit();
     void doFaceMelt(vector<float> bins, int direction);
-    void morphToSpectrum(vector<float> bins);   //Morphing to frequency spectrum
+    void morphToSpectrum(vector<float> bins, float z, int beginParticle, int endParticle);   //Morphing to frequency spectrum
     void morphToSignal(vector<float> bins);     //Morphing to frequency signal
 
     
@@ -102,7 +102,9 @@ private:
     ofMutex soundMutex;
     vector<float> drawFFTBins, middleFFTBins, audioFFTBins, drawSignal, middleSignal, audioSignal;
     vector<float> downsampledBins;
-
+    
+    deque<vector<float> > fftHistory;
+    
     vector< vector<float> > faceMatrix;
     vector< vector<vector<ofApp::Particle*> > > faceParticles;
     ofSoundStream soundStream;
@@ -145,4 +147,6 @@ private:
     void cutoff(vector<float>& data, float cutoff, float ignoreBelow);
     void loadImage(const char* name);
     void downsampleBins(vector<float>& target, vector<float>& source);
+    void doFFTHistory(deque<vector<float > > history);
+
 };

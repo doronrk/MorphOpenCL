@@ -8,11 +8,12 @@ void ofApp::setup(){
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
     signalParticleSpeed = 0.10;
-    spectrumParticleSpeed = 0.10;
+//    spectrumParticleSpeed = 0.10;
+    spectrumParticleSpeed = 0.20;
     faceParticleSpeed = 0.04;
     cubeParticleSpeed = 0.04;
     
-    ySpectrumVerticalShift = 140;
+    ySpectrumVerticalShift = 170;
     ignoreFFTbelow = .01;
     
     portionOfSpecToDraw = 1.0;
@@ -126,6 +127,10 @@ void ofApp::loadImage(const char* name)
 //--------------------------------------------------------------
 void ofApp::downsampleBins(vector<float>& target, vector<float>& source)
 {
+    if (source.empty())
+    {
+        return;
+    }
     int nTargetBins = target.size();
     if (nTargetBins < 1)
     {
@@ -167,20 +172,24 @@ void ofApp::update(){
     
     // update bin sizes
     soundMutex.lock();
-    for (int i = 0; i < drawFFTBins.size(); i++)
+    for (int h = 0; h < fftHistory.size(); h++)
     {
-        if (i < ignoreFFTbelow * drawFFTBins.size())
+        vector<float> fftBins = fftHistory[h];
+        for (int i = 0; i < fftBins.size(); i++)
         {
-            drawFFTBins[i] = 0.0;
-        } else
-        {
-            drawFFTBins[i] = abs(middleFFTBins[i] * (1 + pow(i, freqScalingExponent)/drawFFTBins.size()));
-            drawFFTBins[i] = pow(drawFFTBins[i], amplitudeScalingExponent);
+            if (i < ignoreFFTbelow * fftBins.size())
+            {
+                fftBins[i] = 0.0;
+            } else
+            {
+                fftBins[i] = abs(fftBins[i] * (1 + pow(i, freqScalingExponent)/fftBins.size()));
+                fftBins[i] = pow(fftBins[i], amplitudeScalingExponent);
+            }
         }
     }
     drawSignal = middleSignal;
     soundMutex.unlock();
-    downsampleBins(downsampledBins, drawFFTBins);
+    downsampleBins(downsampledBins, fftHistory[0]);
     cutoff(drawSignal, 0.4, 0);
 }
 
@@ -199,22 +208,19 @@ void ofApp::draw(){
     ofSetColor( 16, 16, 16 );
     glPointSize(1.0);
     
-    //Drawing particles
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof( float4 ), 0);
-	glDrawArrays(GL_POINTS, 0, N );
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-    
     
     switch(drawMode)
     {
         case TIME:
+            ofSetColor( 50, 50, 50 );
+            glPointSize(2.0);
             morphToSignal(drawSignal);
             break;
         case FREQUENCY:
 //            morphToSpectrum(downsampledBins);
-            morphToSpectrum(drawFFTBins);
+            ofSetColor( 50, 50, 50 );
+            glPointSize(2.0);
+            doFFTHistory(fftHistory);
             break;
         case FACE_FREQUENCY:
             doFaceSpectrum(downsampledBins);
@@ -226,6 +232,14 @@ void ofApp::draw(){
             doFaceSplit();
             break;
     }
+    
+    //Drawing particles
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, sizeof( float4 ), 0);
+    glDrawArrays(GL_POINTS, 0, N );
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+    
     ofEnableAlphaBlending();    //Restore from "addition" blending mode
     
     cam.end();
@@ -279,8 +293,35 @@ void ofApp::morphToSignal(vector<float> signal)
     particles.writeToDevice();
 }
 
+
+void ofApp::doFFTHistory(deque<vector<float > > history)
+{
+    int maxNumHistoryToDraw = 16;
+    int numToDraw;
+    if (history.size() > maxNumHistoryToDraw)
+    {
+        numToDraw = maxNumHistoryToDraw;
+    } else {
+        numToDraw = history.size();
+    }
+    int numParticlesPer = N / numToDraw;
+//    int numParticlesPer = N / 2;
+    int begin = 0;
+    int end = numParticlesPer;
+    int numToSkip = history.size()/ numToDraw;
+    float zDistInc = -50;
+    for (int i = 0; i < history.size(); i = i + numToSkip)
+    {
+        float z = zDistInc * i;
+        morphToSpectrum(history[i], z, begin, end);
+        begin = end;
+//        numParticlesPer = numParticlesPer / 2;
+        end += numParticlesPer;
+    }
+}
+
 //--------------------------------------------------------------
-void ofApp::morphToSpectrum(vector<float> bins)
+void ofApp::morphToSpectrum(vector<float> bins, float z, int beginParticle, int endParticle)
 {
     float spectrumWidth = 550;
     int ignoreFirst = bins.size() * ignoreFFTbelow;
@@ -288,16 +329,16 @@ void ofApp::morphToSpectrum(vector<float> bins)
     float binWidth = spectrumWidth / nBins;
     if (nBins > 0)
     {
-        for (int i = 0; i < N; i++)
+        for (int i = beginParticle; i < endParticle; i++)
         {
             int binNumber = (i % nBins);// + ignoreFirst;
+            float pz = z;
             float px = ((binNumber * binWidth) * 2) - spectrumWidth;
             float py = bins[binNumber + ignoreFirst] * spectrumAmplitudeScale - ySpectrumVerticalShift; // magnitude of the bin
             if (py > 300)
             {
                 py = 300;
             }
-            float pz = 0.0;
             
             //Setting to particle
             ofApp::Particle &p = particles[i];
@@ -308,6 +349,7 @@ void ofApp::morphToSpectrum(vector<float> bins)
     //upload to GPU
     particles.writeToDevice();
 }
+
 
 //--------------------------------------------------------------
 void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
@@ -385,6 +427,7 @@ void ofApp::doFaceMelt(vector<float> bins, int direction)
     particles.writeToDevice();
 }
 
+
 void ofApp::doFaceSpectrum(vector<float> bins)
 {
     if (bins.size() != faceParticles.size())
@@ -397,9 +440,7 @@ void ofApp::doFaceSpectrum(vector<float> bins)
     for (int y = 0; y < faceParticles.size(); y++)
     {
         float magnitude = bins[y];
-        magnitude = magnitude * 200;
-//        magnitude = magnitude * (100 + 200 * ((float) y / faceParticles.size()));
-//        magnitude = magnitude * (500 - 200 * ((float) y / faceParticles.size()));
+        magnitude = magnitude * 400;
         for (int x = 0; x < faceParticles[0].size(); x++)
         {
             vector<Particle*> particlesAtPixel = faceParticles[y][x];
@@ -410,10 +451,10 @@ void ofApp::doFaceSpectrum(vector<float> bins)
                 float px = part->target.x;
                 float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
                 pz = pz + magnitude;
-                if (pz > 200)
+                if (pz > 400)
                 {
-                    float diff = pz - 200;
-                    pz = 200 + diff * .1;
+                    float diff = pz - 400;
+                    pz = 400 + diff * .1;
 //                    pz = 300;
                 }
                 part->target.set(part->target.x, part->target.y, pz, 0);
@@ -555,16 +596,19 @@ void ofApp::keyPressed(int key){
     }
     else if ( key ==  '3' )
     {
+        ratchetness = 0.05;
         morphToFace(faceMatrix);
         drawMode = FACE_FREQUENCY;
     }
     else if ( key ==  '4' )
     {
+        ratchetness = 0.05;
         morphToFace(faceMatrix);
         drawMode = MELT;
     }
     else if ( key ==  '5' )
     {
+        ratchetness = 0.05;
         morphToFace(faceMatrix);
         drawMode = SPLIT;
     }
@@ -632,6 +676,11 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
     
     soundMutex.lock();
     middleFFTBins = audioFFTBins;
+    fftHistory.push_front(audioFFTBins);
+    while (fftHistory.size() > 64)
+    {
+        fftHistory.pop_back();
+    }
     middleSignal = audioSignal;
     soundMutex.unlock();
 }
