@@ -3,29 +3,24 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    //Screen setup
+    
+    //Screen, visual setup
     ofSetWindowTitle("Morph OpenCL example");
     ofSetFrameRate( 60 );
 	ofSetVerticalSync(false);
     signalParticleSpeed = 0.10;
-//    spectrumParticleSpeed = 0.10;
     spectrumParticleSpeed = 0.20;
     faceParticleSpeed = 0.04;
     cubeParticleSpeed = 0.04;
-    
     ySpectrumVerticalShift = 170;
     ignoreFFTbelow = .01;
-    
     portionOfSpecToDraw = 1.0;
-    
-//    freqScalingExponent = 1.7;
-//    amplitudeScalingExponent = 1.6;
-//    
     freqScalingExponent = 1.4;
     amplitudeScalingExponent = 1.7;
-    
     signalAmplitudeScale = 3000.0;
     spectrumAmplitudeScale = 400.0;
+    yFaceWave = 0;
+    yFaceWaveDelta = 1;
     if(portionOfSpecToDraw > 1.0 || portionOfSpecToDraw <= 0.0) {
         ofLogFatalError() << "invalid portionOfSpecToDraw, should be in range (0, 1.0] ";
     }
@@ -36,8 +31,6 @@ void ofApp::setup(){
     nOutputChannels = 0;
     nInputChannels = 2;
     sampleRate = 44100;
-//    bufferSize = 2048;
-//    bufferSize = 1024;
     bufferSize = 512;
     nBuffers = 4;
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HAMMING, OF_FFT_FFTW);
@@ -50,11 +43,9 @@ void ofApp::setup(){
     
     soundStream.setup(this, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
     
-    //Camera
-//	cam.setDistance(800);
+    //Camera setup
     cam.setGlobalPosition(0, 0, 800);
     cam.setFov(60.0);
-//    cam.disableMouseInput();
     cam.enableMouseInput();
     
     //OpenCL
@@ -76,25 +67,13 @@ void ofApp::setup(){
     const char* imageName = "ksenia256.jpg";
     loadImage(imageName);
     downsampledBins.resize(faceMatrix.size(), 0);
-//    downsampledBins.resize(8, 0);
     
-    yFaceWave = 0;
-    yFaceWaveDelta = 1;
-    
+    // setup the draw mode
     faceWave = false;
     instructionsHidden = false;
     suspended = false;
     drawMode = TIME;
-    
     ratchetness = 0.9;
-    
-//    static const int testSourceArr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-//    static const int testTargetArr[] = {0, 0, 0, 0, 0};
-//
-//    vector<float> testSource (testSourceArr, testSourceArr + sizeof(testSourceArr) / sizeof(testSourceArr[0]) );
-//    vector<float> testTarget (testTargetArr, testTargetArr + sizeof(testTargetArr) / sizeof(testTargetArr[0]) );
-//    
-//    downsampleBins(testTarget, testSource);
 }
 
 void ofApp::loadImage(const char* name)
@@ -105,7 +84,7 @@ void ofApp::loadImage(const char* name)
     int height = pix.getHeight();
     int width = pix.getWidth();
     
-    //now we have an empty 2D-matrix of size (0,0). Resizing it with one single command:
+    //now we have an empty 2D-matrix of size (0,0). Resize it with one single command:
     faceMatrix.resize(height, vector<float>(width ,0.0));
     
     //Build "distribution array" of brightness
@@ -190,6 +169,7 @@ void ofApp::update(){
     drawSignal = middleSignal;
     soundMutex.unlock();
     downsampleBins(downsampledBins, fftHistory[0]);
+    // don't let the particles go off the screen
     cutoff(drawSignal, 0.4, 0);
 }
 
@@ -197,9 +177,6 @@ void ofApp::update(){
 void ofApp::draw(){
     ofBackground(0, 0, 0);
 
-    //camera rotate
-    float time = ofGetElapsedTimef();
-//    cam.orbit( sin(time*0.25) * 6, 0, 600, ofPoint( 0, 0, 0 ) );
     cam.begin();
     
     //Enabling "addition" blending mode to sum up particles brightnesses
@@ -207,7 +184,6 @@ void ofApp::draw(){
     
     ofSetColor( 16, 16, 16 );
     glPointSize(1.0);
-    
     
     switch(drawMode)
     {
@@ -217,7 +193,6 @@ void ofApp::draw(){
             morphToSignal(drawSignal);
             break;
         case FREQUENCY:
-//            morphToSpectrum(downsampledBins);
             ofSetColor( 50, 50, 50 );
             glPointSize(2.0);
             doFFTHistory(fftHistory);
@@ -269,6 +244,7 @@ void ofApp::draw(){
 
 
 //--------------------------------------------------------------
+// Updates the particle positions to follow the time domain signal
 void ofApp::morphToSignal(vector<float> signal)
 {
     float signalWidth = 600;
@@ -293,10 +269,11 @@ void ofApp::morphToSignal(vector<float> signal)
     particles.writeToDevice();
 }
 
-
+//--------------------------------------------------------------
+// Draws FFT history as a water fall
 void ofApp::doFFTHistory(deque<vector<float > > history)
 {
-    int maxNumHistoryToDraw = 16;
+    int maxNumHistoryToDraw = 8;
     int numToDraw;
     if (history.size() > maxNumHistoryToDraw)
     {
@@ -305,7 +282,6 @@ void ofApp::doFFTHistory(deque<vector<float > > history)
         numToDraw = history.size();
     }
     int numParticlesPer = N / numToDraw;
-//    int numParticlesPer = N / 2;
     int begin = 0;
     int end = numParticlesPer;
     int numToSkip = history.size()/ numToDraw;
@@ -315,12 +291,12 @@ void ofApp::doFFTHistory(deque<vector<float > > history)
         float z = zDistInc * i;
         morphToSpectrum(history[i], z, begin, end);
         begin = end;
-//        numParticlesPer = numParticlesPer / 2;
         end += numParticlesPer;
     }
 }
 
 //--------------------------------------------------------------
+// Updates the particle positions to follow the frequency domain
 void ofApp::morphToSpectrum(vector<float> bins, float z, int beginParticle, int endParticle)
 {
     float spectrumWidth = 550;
@@ -335,6 +311,7 @@ void ofApp::morphToSpectrum(vector<float> bins, float z, int beginParticle, int 
             float pz = z;
             float px = ((binNumber * binWidth) * 2) - spectrumWidth;
             float py = bins[binNumber + ignoreFirst] * spectrumAmplitudeScale - ySpectrumVerticalShift; // magnitude of the bin
+            // don't let the particles go too far
             if (py > 300)
             {
                 py = 300;
@@ -352,6 +329,8 @@ void ofApp::morphToSpectrum(vector<float> bins, float z, int beginParticle, int 
 
 
 //--------------------------------------------------------------
+// Updates the particle positions to draw a cube
+// Unused, but could be incorporated later
 void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
 	for(int i=0; i<N; i++) {
 		//Getting random point at cube
@@ -367,14 +346,6 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
         if ( axe == 0 ) { pnt.x = ( pnt.x >= 0 ) ? rad : (-rad ); }
         if ( axe == 1 ) { pnt.y = ( pnt.y >= 0 ) ? rad : (-rad ); }
         if ( axe == 2 ) { pnt.z = ( pnt.z >= 0 ) ? rad : (-rad ); }
-        
-        //add noise
-//        float noise = 10;
-//        pnt.x += ofRandom( -noise, noise );
-//        pnt.y += ofRandom( -noise, noise );
-//        pnt.z += ofRandom( -noise, noise );
-//        
-//        pnt.y -= 150;   //shift down
 
         //Setting to particle
 		Particle &p = particles[i];
@@ -393,6 +364,9 @@ void ofApp::morphToCube( bool setPos ) {       //Morphing to cube
     }
 }
 
+//--------------------------------------------------------------
+// Causes the face particles to drift permanently according to the frequency spectrum
+// Originally a bug, but looked to cool to delete
 void ofApp::doFaceMelt(vector<float> bins, int direction)
 {
     if (bins.size() != faceParticles.size())
@@ -428,6 +402,9 @@ void ofApp::doFaceMelt(vector<float> bins, int direction)
 }
 
 
+
+//--------------------------------------------------------------
+// Pertrubs the face particles along the z axis according to the spectrum
 void ofApp::doFaceSpectrum(vector<float> bins)
 {
     if (bins.size() != faceParticles.size())
@@ -447,15 +424,16 @@ void ofApp::doFaceSpectrum(vector<float> bins)
             for (int p = 0; p < particlesAtPixel.size(); p++)
             {
                 Particle* part = particlesAtPixel[p];
-                //projection on cylinder
+                
+                //projection on cylinder to give a more 3-d appearance
                 float px = part->target.x;
                 float pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
+                // Compress the z position
                 pz = pz + magnitude;
                 if (pz > 400)
                 {
                     float diff = pz - 400;
                     pz = 400 + diff * .1;
-//                    pz = 300;
                 }
                 part->target.set(part->target.x, part->target.y, pz, 0);
                 part->speed = ratchetness;
@@ -466,7 +444,9 @@ void ofApp::doFaceSpectrum(vector<float> bins)
 }
 
 
-//-----------------------------------------------------------------------------------------
+//--------------------------------------------------------------
+// Causes some fraction of the face particles shift to the side
+// Originally a bug, but looked to cool to delete
 void ofApp::doFaceSplit()
 {
     float time = ofGetElapsedTimef();
@@ -477,11 +457,6 @@ void ofApp::doFaceSplit()
         ofSetLineWidth(2.0);
         ofNoFill();
         float lineWidth = 600;
-//        ofBeginShape();
-//        ofVertex(-lineWidth, height, 0.0);
-//        ofVertex(lineWidth, height, 0.0);
-//        ofEndShape(false);
-//    
         if (faceHeight > 0)
         {
             int y = ((height) + faceHeight) / 2;
@@ -503,6 +478,7 @@ void ofApp::doFaceSplit()
 
 
 //--------------------------------------------------------------
+// Updates the position of the particles to reflect the brightness matrix created from the loaded image
 void ofApp::morphToFace(vector< vector<float> > faceMatrix) {      //Morphing to face
     
     //Set up particles
@@ -537,7 +513,7 @@ void ofApp::morphToFace(vector< vector<float> > faceMatrix) {      //Morphing to
                 px += ofRandom( -noisex, noisex );
                 py += ofRandom( -noisey, noisey );
                 
-                //projection on cylinder
+                //projection on cylinder to give a more 3-d appearance
                 float Rad = width * faceScale * 0.4;
                 pz = sqrt( fabs( Rad * Rad - px * px ) ) - Rad;
                 
@@ -577,7 +553,6 @@ void ofApp::morphToFace(vector< vector<float> > faceMatrix) {      //Morphing to
         p.speed = faceParticleSpeed;
         
     }
-    
     //upload to GPU
     particles.writeToDevice();
 }
@@ -643,8 +618,7 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
 {
     vector<float> monoMix;
     monoMix.resize(bufferSize);
-    // scale buffer by maxValue
-//    float silentThreshold = 0.0001;
+    // convert signal to mono
     bool silent = true;
     for (int frame = 0; frame < bufferSize; frame++)
     {
@@ -686,6 +660,7 @@ void ofApp::audioReceived(float* input, int bufferSize, int nChannels)
 }
 
 //--------------------------------------------------------------
+// scales all elements in data to [0, 1]
 void ofApp::normalize(vector<float>& data) {
     float maxValue = 0;
     for(int i = 0; i < data.size(); i++) {
@@ -701,6 +676,8 @@ void ofApp::normalize(vector<float>& data) {
     }
 }
 
+//--------------------------------------------------------------
+// scales all elements in data to [0, cutoff], but only if the max value exceeds cutoff
 void ofApp::cutoff(vector<float>& data, float cutoff, float ignoreBelow)
 {
     int begin = ignoreBelow*data.size();
