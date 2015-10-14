@@ -1,21 +1,7 @@
 #pragma once
 
 //---------------------------------------------------------------
-//Example of using OpenCL for creating particle system,
-//which morphs between two 3D shapes - cube and face image
-//
-//Control keys: 1 - morph to cube, 2 - morph to face
-//
-//All drawn particles have equal brightness, so to achieve face-like
-//particles configuration by placing different number of particles
-//at each pixel and draw them in "addition blending" mode.
-//
-//Project is developed for openFrameworks 8.4_osx and is based
-//on example-Particles example of ofxMSAOpenCL adoon.
-//It uses addons ofxMSAOpenCL and ofxMSAPingPong.
-//For simplicity this addons are placed right in the project's folder.
-//
-//The code and "ksenia.jpg" photo made by Kuflex.com, 2014:
+//This project is a branch of the code and "ksenia.jpg" photo made by Kuflex.com, 2014:
 //Denis Perevalov, Igor Sodazot and Ksenia Lyashenko.
 //---------------------------------------------------------------
 
@@ -31,6 +17,14 @@ public:
     enum DrawMode {TIME, FREQUENCY, FACE_FREQUENCY, MELT, SPLIT};
     
     //Particle type - contains all information about particle except particle's position.
+    /*
+     Dummy fields are needed to comply OpenCL alignment rule:
+     sizeof(float4) = 4*4=16,
+     sizeof(float) = 4,
+     so overall structure size should divide to 16 and 4.
+     Without dummies the size if sizeof(float4)+sizeof(float)=20, so we add
+     three dummies to have size 32 bytes.
+     */
     typedef struct{
         float4 target;  //target point where to fly
         float speed;    //speed of flying
@@ -39,14 +33,7 @@ public:
         float dummy3;
     } Particle;
     
-    /*
-     Dummy fields are needed to comply OpenCL alignment rule:
-     sizeof(float4) = 4*4=16,
-     sizeof(float) = 4,
-     so overall structure size should divide to 16 and 4.
-     Without dummies the size if sizeof(float4)+sizeof(float)=20, so we add
-     three dummies to have size 32 bytes.
-     */
+
     
     msa::OpenCL			opencl;
     
@@ -55,17 +42,6 @@ public:
     GLuint vbo;
     
     int N = 1000000; //Number of particles
-    //int N = 10000;
-
-    
-    /*
-     Dummy fields are needed to comply OpenCL alignment rule:
-     sizeof(float4) = 4*4=16,
-     sizeof(float) = 4,
-     so overall structure size should divide to 16 and 4.
-     Without dummies the size if sizeof(float4)+sizeof(float)=20, so we add
-     three dummies to have size 32 bytes.
-     */
 
     void setup();
     void update();
